@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "atalaydor/historical-data-backfill",
+  "repository_visibility": "PRIVATE",
+  "authoritative_branch": "main",
+  "dispatched_commit": "fb4179bf172491c97e6149a1fa33bfb0f147ee2d",
+  "workflow_run_id": 32838857044,
+  "workflow_url": "https://github.com/atalaydor/historical-data-backfill/actions/runs/32838857044",
+  "dispatched_at": "2026-08-25T10:46:01Z",
+  "status": "BLOCKED_BEFORE_RUNNER_START",
+  "canary_started": false,
+  "production_started": false,
+  "pilot_started": false,
+  "failed_job_id": 97773708209,
+  "github_annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings",
+  "operator_action": "Resolve the GitHub account Billing & plans payment/spending-limit block for private-repository Actions, then rerun workflow run-1.yml on main.",
+  "safety": "No source object was acquired and no durable staging Release was created; rerun starts from the exact zero-work checkpoint."
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "dataset_id": "historical-rich-information-run-1",
-  "status": "CANARY_REQUIRED",
+  "status": "REMOTE_RUNNER_BILLING_BLOCKED",
   "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
   "start_date": "2026-06-01",
   "end_date_exclusive": "2026-07-09",
