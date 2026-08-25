@@ -10,6 +10,18 @@ from .acquire import acquire_binance_segment, acquire_coinbase
 from .inventory import ASSETS
 from .model import AuthorityError, write_json
 from .pilot import run_arena_pilot
+from .predictive import (
+    assemble_predictive_authority,
+)
+from .predictive import (
+    stage_binance as stage_predictive_binance,
+)
+from .predictive import (
+    stage_coinbase as stage_predictive_coinbase,
+)
+from .predictive import (
+    stage_target as stage_predictive_target,
+)
 from .release import GitHubReleases
 
 PREFIX = "historical-rich-information-run-1"
@@ -128,6 +140,16 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("arena-pilot")
     sub.add_parser("assemble-btc")
     sub.add_parser("assemble")
+    predictive_target = sub.add_parser("predictive-target")
+    predictive_target.add_argument("--start", required=True)
+    predictive_target.add_argument("--end", required=True)
+    predictive_binance = sub.add_parser("predictive-binance")
+    predictive_binance.add_argument("--start", required=True)
+    predictive_binance.add_argument("--end", required=True)
+    predictive_coinbase = sub.add_parser("predictive-coinbase")
+    predictive_coinbase.add_argument("--start", default=None)
+    predictive_coinbase.add_argument("--end", default=None)
+    sub.add_parser("predictive-assemble")
     return result
 
 
@@ -147,6 +169,19 @@ def main() -> None:
         assemble(("BTC",))
     elif args.command == "assemble":
         assemble()
+    elif args.command == "predictive-target":
+        stage_predictive_target(args.start, args.end)
+    elif args.command == "predictive-binance":
+        stage_predictive_binance(args.start, args.end)
+    elif args.command == "predictive-coinbase":
+        if (args.start is None) != (args.end is None):
+            raise AuthorityError("predictive Coinbase bounds must be supplied together")
+        if args.start is None:
+            stage_predictive_coinbase()
+        else:
+            stage_predictive_coinbase(args.start, args.end)
+    elif args.command == "predictive-assemble":
+        assemble_predictive_authority()
     else:
         raise AssertionError(args.command)
 

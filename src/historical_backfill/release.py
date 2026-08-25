@@ -119,7 +119,11 @@ class GitHubReleases:
         existing = {item.name: item for item in self.assets(release_id)}
         accepted: list[Asset] = []
         prefix = partition.replace("/", "--")
-        for path in sorted(directory.iterdir()):
+        paths = sorted(
+            directory.iterdir(),
+            key=lambda item: (item.name == "manifest.json", item.name),
+        )
+        for path in paths:
             if not path.is_file():
                 continue
             size, digest = hash_file(path)
@@ -143,6 +147,50 @@ class GitHubReleases:
             self._verify_download(asset, digest, size, directory)
             accepted.append(asset)
         return accepted
+
+    def stage_complete(self, tag: str, partition: str) -> bool:
+        matches = [item for item in self.releases() if item.get("tag_name") == tag]
+        if not matches:
+            return False
+        if len(matches) != 1 or not matches[0].get("draft"):
+            raise AuthorityError(f"staging authority is ambiguous or immutable: {tag}")
+        assets = self.assets(int(matches[0]["id"]))
+        prefix = partition.replace("/", "--") + "--"
+        scoped = [item for item in assets if item.name.startswith(prefix)]
+        manifests = [item for item in scoped if item.name.endswith("--manifest.json")]
+        if len(manifests) > 1 or any(item.state != "uploaded" for item in scoped):
+            raise AuthorityError(f"staging authority is partial or divergent: {tag}")
+        return len(manifests) == 1
+
+    def download_asset(self, asset: Asset, target: Path, maximum_bytes: int) -> tuple[int, str]:
+        if asset.size > maximum_bytes:
+            raise AuthorityError("remote asset exceeds download breaker")
+        request = urllib.request.Request(
+            asset.api_url,
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "Accept": "application/octet-stream",
+                "User-Agent": USER_AGENT,
+            },
+        )
+        try:
+            with (
+                urllib.request.urlopen(request, timeout=180) as response,
+                target.open("xb") as handle,
+            ):
+                written = 0
+                while chunk := response.read(1_048_576):
+                    written += len(chunk)
+                    if written > maximum_bytes:
+                        raise AuthorityError("remote asset crossed download breaker")
+                    handle.write(chunk)
+            observed = hash_file(target)
+            if observed[0] != asset.size:
+                raise AuthorityError("remote asset size diverged")
+            return observed
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
 
     def _upload(self, release_id: int, name: str, path: Path) -> Asset:
         query = urllib.parse.urlencode({"name": name})

@@ -1,0 +1,139 @@
+name: BTC independent predictive-validation acquisition
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir . ruff==0.12.12 mypy==1.17.1
+      - run: python -m unittest discover -s tests -v
+      - run: ruff check .
+      - run: mypy
+      - run: git diff --check
+
+  canary-target:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions: {contents: write}
+    concurrency:
+      group: btc-predictive-v1-canary-target
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-target --start '2026-07-08T23:00:00Z' --end '2026-07-09T00:00:00Z'
+
+  canary-binance:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions: {contents: write}
+    concurrency:
+      group: btc-predictive-v1-canary-binance
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-binance --start '2026-07-08' --end '2026-07-09'
+
+  canary-coinbase:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: write}
+    concurrency:
+      group: btc-predictive-v1-canary-coinbase
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-coinbase --start '2026-07-08T23:00:00Z' --end '2026-07-09T00:00:00Z'
+
+  target:
+    needs: canary-target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions: {contents: write}
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        segment:
+          - {start: '2026-07-08T23:00:00Z', end: '2026-07-10T12:00:00Z'}
+          - {start: '2026-07-10T12:00:00Z', end: '2026-07-12T01:00:00Z'}
+          - {start: '2026-07-12T01:00:00Z', end: '2026-07-13T14:00:00Z'}
+          - {start: '2026-07-13T14:00:00Z', end: '2026-07-15T03:00:00Z'}
+          - {start: '2026-07-15T03:00:00Z', end: '2026-07-16T16:00:00Z'}
+          - {start: '2026-07-16T16:00:00Z', end: '2026-07-18T05:00:00Z'}
+          - {start: '2026-07-18T05:00:00Z', end: '2026-07-19T18:00:00Z'}
+          - {start: '2026-07-19T18:00:00Z', end: '2026-07-21T07:00:00Z'}
+    concurrency:
+      group: btc-predictive-v1-target-${{ matrix.segment.start }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-target --start '${{ matrix.segment.start }}' --end '${{ matrix.segment.end }}'
+
+  binance:
+    needs: canary-binance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions: {contents: write}
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        segment:
+          - {start: '2026-07-08', end: '2026-07-12'}
+          - {start: '2026-07-12', end: '2026-07-16'}
+          - {start: '2026-07-16', end: '2026-07-20'}
+          - {start: '2026-07-20', end: '2026-07-22'}
+    concurrency:
+      group: btc-predictive-v1-binance-${{ matrix.segment.start }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-binance --start '${{ matrix.segment.start }}' --end '${{ matrix.segment.end }}'
+
+  coinbase:
+    needs: canary-coinbase
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {contents: write}
+    concurrency:
+      group: btc-predictive-v1-coinbase
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-coinbase
+
+  certify:
+    needs: [target, binance, coinbase]
+    if: ${{ always() && needs.target.result == 'success' && needs.binance.result == 'success' && needs.coinbase.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {contents: write}
+    concurrency:
+      group: btc-predictive-v1-exclusive-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill predictive-assemble

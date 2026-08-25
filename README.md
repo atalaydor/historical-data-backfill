@@ -18,3 +18,12 @@ is abandoned after failing its preregistered quality gates. No residual acquisit
 
 See `docs/run-1-authority.md`, `docs/run-2-reconciliation.json`,
 `docs/btc-gamma-linux-handoff.json`, and `config/preregistration.json`.
+
+The closed Run-1 experiment is never reused as validation evidence. The separately preregistered
+`btc-independent-predictive-validation-v1` experiment uses the untouched half-open interval
+`[2026-07-08T23:00:00Z, 2026-07-21T07:00:00Z)`. It asks only whether the same 16 Class-A
+external-information tracks independently predict final BTC 5-minute Up/Down outcomes; it does
+not test residual value beyond a Polymarket midpoint. Official Gamma supplies immutable target
+identity/outcome snapshots, and Binance/Coinbase supply external observations. Acquisition is
+segmented and parallel, while only final canonical publication is exclusive. Gamma/Linux owns
+all feature derivation and scoring.

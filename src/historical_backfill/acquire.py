@@ -23,20 +23,50 @@ MAX_SOURCE_BYTES = 250_000_000
 TARGET_END_NS = int(datetime(2026, 7, 8, 23, tzinfo=UTC).timestamp() * 1_000_000_000)
 
 
-def acquire_binance_segment(asset: str, start: str, end: str, root: Path) -> Path:
+def acquire_binance_segment(
+    asset: str,
+    start: str,
+    end: str,
+    root: Path,
+    *,
+    logical_start: str | None = None,
+    logical_end: str | None = None,
+) -> Path:
     output = root / f"{asset}-{start}-{end}"
     output.mkdir(parents=True, exist_ok=False)
     sources: list[dict[str, Any]] = []
     try:
+        minimum_event_ns = _iso_ns(logical_start) if logical_start is not None else None
+        maximum_event_ns = _iso_ns(logical_end) if logical_end is not None else None
         for day in days(start, end):
             for spec in binance_specs(asset, day):
-                sources.append(_acquire_binance(spec, output, root))
-        logical_end = "2026-07-08T23:00:00Z" if end == "2026-07-09" else end
+                sources.append(
+                    _acquire_binance(
+                        spec,
+                        output,
+                        root,
+                        minimum_event_ns=minimum_event_ns,
+                        maximum_event_ns=(
+                            maximum_event_ns
+                            if maximum_event_ns is not None
+                            else TARGET_END_NS
+                            if spec.day == "2026-07-08"
+                            else None
+                        ),
+                    )
+                )
+        manifest_end = (
+            logical_end
+            if logical_end is not None
+            else "2026-07-08T23:00:00Z"
+            if end == "2026-07-09"
+            else end
+        )
         manifest = {
             "schema_version": "1.0.0",
             "authority_class": "A",
             "asset": asset,
-            "interval": {"start": start, "end": logical_end},
+            "interval": {"start": logical_start or start, "end": manifest_end},
             "transform": TRANSFORM,
             "sources": sources,
         }
@@ -51,7 +81,14 @@ def acquire_binance_segment(asset: str, start: str, end: str, root: Path) -> Pat
         raise
 
 
-def _acquire_binance(spec: SourceSpec, output: Path, scratch: Path) -> dict[str, Any]:
+def _acquire_binance(
+    spec: SourceSpec,
+    output: Path,
+    scratch: Path,
+    *,
+    minimum_event_ns: int | None = None,
+    maximum_event_ns: int | None = None,
+) -> dict[str, Any]:
     stem = f"{spec.asset}-{spec.family}-{spec.day}"
     archive = scratch / f"{stem}.zip"
     text, checksum_receipt = get_text(spec.checksum_url or "")
@@ -68,7 +105,8 @@ def _acquire_binance(spec: SourceSpec, output: Path, scratch: Path) -> dict[str,
             spec,
             archive,
             target,
-            maximum_event_ns=TARGET_END_NS if spec.day == "2026-07-08" else None,
+            minimum_event_ns=minimum_event_ns,
+            maximum_event_ns=maximum_event_ns,
         )
     finally:
         archive.unlink(missing_ok=True)
@@ -103,6 +141,7 @@ def _normalize_zip(
     spec: SourceSpec,
     archive: Path,
     target: Path,
+    minimum_event_ns: int | None = None,
     maximum_event_ns: int | None = None,
 ) -> tuple[int, int, int]:
     schema = pa.schema(
@@ -146,6 +185,8 @@ def _normalize_zip(
                         raise AuthorityError("source event outside object UTC day")
                     if maximum_event_ns is not None and event_ns >= maximum_event_ns:
                         continue
+                    if minimum_event_ns is not None and event_ns < minimum_event_ns:
+                        continue
                     if last_ns is not None and event_ns < last_ns:
                         raise AuthorityError("source event time regressed")
                     first_ns = event_ns if first_ns is None else first_ns
@@ -182,6 +223,13 @@ def _to_ns(value: int, unit: str) -> int:
     if unit == "ms":
         return value * 1_000_000
     raise AuthorityError(f"unsupported timestamp unit: {unit}")
+
+
+def _iso_ns(value: str) -> int:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise AuthorityError("logical source bound must be timezone-aware")
+    return int(parsed.timestamp() * 1_000_000_000)
 
 
 def acquire_coinbase(start: str, end: str, root: Path) -> Path:

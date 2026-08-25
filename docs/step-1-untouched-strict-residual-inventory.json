@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "inventory_identity": "c8cdaf7abe811f6edb73da81dde88e2d767f2c482da00576b6ec2fc7ab146627",
+  "accessed_at": "2026-08-25T00:00:00Z",
+  "scope": "existing certified or immutable authorities already available to the project; no source reacquisition or broad source search",
+  "required_independent_utc_hour_clusters": 125,
+  "authorities": [
+    {
+      "repository": "atalaydor/historical-data-backfill",
+      "authority": "historical-rich-information-run-1-btc-authority-v1",
+      "release_url": "https://github.com/atalaydor/historical-data-backfill/releases/tag/historical-rich-information-run-1-btc-authority-v1",
+      "interval": ["2026-06-01T00:00:00Z", "2026-07-08T23:00:00Z"],
+      "usable": false,
+      "reason": "closed experiment; chronology is already exposed"
+    },
+    {
+      "repository": "atalaydor/generalised-ai-strategy-factory",
+      "authority": "factory-canonical-evidence-archive-v1",
+      "release_url": "https://github.com/atalaydor/generalised-ai-strategy-factory/releases/tag/factory-canonical-evidence-archive-v1",
+      "release_id": 375604830,
+      "schema_identity": "canonical.prospective-full-depth-partition.v1",
+      "asset_sha256": [
+        "9fb3be58e5b509b698654e5e7d50f4a01c5cb1a318ff812e8a6fc60157d55f74",
+        "4dc035ea670001e9bda52e48231ed0bde9a82bc1ba3e68e771b0d77e0a7c8515",
+        "53575974b87066bdc1f54561f29b14b5027d2e42620b56d52e369b4d5f0873b1",
+        "59ca963ce4b5504dc58d5d9559b1f67776508d41746d237614f3347625206d28",
+        "7676ac303dae58a36397db2670259e2d20b184ac7eb4a120b102fe9c7db994bc",
+        "b602c0b15aa1cc10c65cbea94722ce51729768c3ba1529ced4a17508cf95fd87",
+        "b9a5be0b2562c309a160524385438cf5ae16d55671d6dca9d6319a34fe56b253",
+        "bb6879c072f31bdc2f39e0b54aae82ea053c4395248d5c142e3d06b13d5603de",
+        "ef93e60d541b0586136aed9c8896285a6b7a20152d19efda3dc9507421314201"
+      ],
+      "btc_evidence_span": ["2026-08-22T21:40:00Z", "2026-08-23T11:05:00Z"],
+      "candidate_partitions": 123,
+      "eligible_complete_partitions": 34,
+      "excluded_partitions": 89,
+      "represented_utc_hours": 12,
+      "eligible_complete_utc_hour_clusters": 11,
+      "usable": false,
+      "reason": "only 11 of 125 required untouched complete causal-cutoff-BBO clusters"
+    }
+  ],
+  "strict_residual_recoverable": false,
+  "decision": "STEP_1_FAIL_PROCEED_STEP_2",
+  "external_compatibility": "official Binance spot/perpetual and Coinbase evidence remains historically available, but external availability cannot replace missing Polymarket cutoff BBO"
+}

@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": "btc-independent-predictive-validation-v1",
+  "preregistered_at": "2026-08-25T00:00:00Z",
+  "preregistration_identity": "e99ee179e34b920e0bbc611c786911dd82b372ce23d2ee4be5e612fa1f6f338a",
+  "claim_boundary": {
+    "question": "Do the frozen external-information tracks independently predict the eventual BTC 5-minute Up/Down outcome on untouched historical evidence?",
+    "does_not_establish": [
+      "incremental or residual value beyond the Polymarket midpoint",
+      "production eligibility",
+      "confirmation",
+      "strategy promotion"
+    ],
+    "scoring_owner": "Gamma/Linux",
+    "windows_role": "evidence control plane only"
+  },
+  "untouched_authority": {
+    "closed_btc_interval": ["2026-06-01T00:00:00Z", "2026-07-08T23:00:00Z"],
+    "blocked_strict_residual_evidence_span": [
+      "2026-08-22T21:40:00Z",
+      "2026-08-23T11:05:00Z"
+    ],
+    "validation_interval": ["2026-07-08T23:00:00Z", "2026-07-21T07:00:00Z"],
+    "non_overlap_rule": "half-open intervals must have empty intersection with every exposed BTC experiment interval"
+  },
+  "cohort": {
+    "asset": "BTC",
+    "duration_seconds": 300,
+    "slug_rule": "btc-updown-5m-{unix_start_seconds}",
+    "candidate_order": "ascending unix_start_seconds at exact 300-second cadence",
+    "candidate_markets": 3552,
+    "decision_cutoff": "market_end_minus_60_seconds",
+    "admit_only_if": [
+      "official Gamma slug and condition identity agree",
+      "official event start equals slug epoch",
+      "official market end equals start plus 300 seconds",
+      "market is closed and exactly one of Up/Down has final price 1 while the other has final price 0",
+      "raw official response and normalized row are content-addressed"
+    ],
+    "exclusions": [
+      "market absent from official authority",
+      "identity or time disagreement",
+      "unresolved or ambiguous final outcome",
+      "duplicate or divergent official authority",
+      "missing required external observations for a particular track"
+    ],
+    "no_inference": ["winner", "settlement", "missing market", "missing source observation"]
+  },
+  "split": {
+    "development": ["2026-07-08T23:00:00Z", "2026-07-15T03:00:00Z"],
+    "evaluation": ["2026-07-15T03:00:00Z", "2026-07-21T07:00:00Z"],
+    "candidate_hours_each": 148,
+    "candidate_markets_each": 1776,
+    "development_is_never_scored_as_validation": true
+  },
+  "sources": {
+    "binance": {
+      "provider": "official Binance public data archive",
+      "products": ["BTCUSDT spot", "BTCUSDT USD-M perpetual"],
+      "families": ["aggregate trades", "spot 1-second klines", "perpetual 1-minute klines"],
+      "event_time_rule": "only exchange event timestamps at or before cutoff; archive and acquisition times are provenance, never event time",
+      "urls": [
+        "https://github.com/binance/binance-public-data/blob/master/README.md",
+        "https://data.binance.vision/"
+      ]
+    },
+    "coinbase": {
+      "provider": "official Coinbase Exchange",
+      "product": "BTC-USD",
+      "family": "60-second candles",
+      "causal_rule": "use only a candle whose complete 60-second bucket ended at or before cutoff",
+      "url": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles"
+    },
+    "target": {
+      "provider": "official Polymarket Gamma",
+      "url_template": "https://gamma-api.polymarket.com/markets/slug/{slug}",
+      "role": "identity and final outcome only; no historical midpoint or book substitution"
+    }
+  },
+  "tracks": [
+    {"ordinal": 1, "id": "binance_spot_return_1s", "definition": "log return between the latest causal BTCUSDT spot aggregate-trade prices at or before T-1s and T"},
+    {"ordinal": 2, "id": "binance_spot_return_5s", "definition": "log return between the latest causal BTCUSDT spot aggregate-trade prices at or before T-5s and T"},
+    {"ordinal": 3, "id": "binance_spot_return_15s", "definition": "log return between the latest causal BTCUSDT spot aggregate-trade prices at or before T-15s and T"},
+    {"ordinal": 4, "id": "binance_spot_return_30s", "definition": "log return between the latest causal BTCUSDT spot aggregate-trade prices at or before T-30s and T"},
+    {"ordinal": 5, "id": "binance_spot_return_60s", "definition": "log return between the latest causal BTCUSDT spot aggregate-trade prices at or before T-60s and T"},
+    {"ordinal": 6, "id": "binance_perpetual_return_1s", "definition": "log return between the latest causal BTCUSDT USD-M aggregate-trade prices at or before T-1s and T"},
+    {"ordinal": 7, "id": "binance_perpetual_return_5s", "definition": "log return between the latest causal BTCUSDT USD-M aggregate-trade prices at or before T-5s and T"},
+    {"ordinal": 8, "id": "binance_perpetual_return_15s", "definition": "log return between the latest causal BTCUSDT USD-M aggregate-trade prices at or before T-15s and T"},
+    {"ordinal": 9, "id": "binance_perpetual_return_30s", "definition": "log return between the latest causal BTCUSDT USD-M aggregate-trade prices at or before T-30s and T"},
+    {"ordinal": 10, "id": "binance_perpetual_return_60s", "definition": "log return between the latest causal BTCUSDT USD-M aggregate-trade prices at or before T-60s and T"},
+    {"ordinal": 11, "id": "joint_60s_realized_volatility", "definition": "square root of the sum of squared one-second previous-tick log returns over (T-60s,T] for spot and perpetual"},
+    {"ordinal": 12, "id": "spot_perpetual_basis", "definition": "log of the latest causal perpetual aggregate-trade price divided by the latest causal spot aggregate-trade price at T"},
+    {"ordinal": 13, "id": "spot_taker_pressure_60s", "definition": "spot aggressive-buy notional minus aggressive-sell notional divided by total spot aggressive notional over (T-60s,T] using the official buyer-is-maker flag"},
+    {"ordinal": 14, "id": "perpetual_taker_pressure_60s", "definition": "perpetual aggressive-buy notional minus aggressive-sell notional divided by total perpetual aggressive notional over (T-60s,T] using the official buyer-is-maker flag"},
+    {"ordinal": 15, "id": "binance_coinbase_disagreement_60s", "definition": "Binance spot 60-second log return minus Coinbase BTC-USD log return for the same latest fully completed UTC-minute bucket at T"},
+    {"ordinal": 16, "id": "coinbase_lead_lag", "definition": "Coinbase BTC-USD log return for the penultimate fully completed UTC-minute bucket minus the Binance spot log return for the immediately following fully completed bucket"}
+  ],
+  "feature_causality": {
+    "T": "market_end_minus_60_seconds",
+    "latest_trade_maximum_age_seconds": 2,
+    "one_second_grid_maximum_staleness_seconds": 2,
+    "coinbase_complete_bucket_only": true,
+    "missing_policy": "track-market exclusion without interpolation, forward look, or cross-track substitution"
+  },
+  "model": {
+    "family": "one separate univariate logistic model per frozen track",
+    "baseline": "development-set Up frequency as a fixed intercept-only probability",
+    "standardization": "development mean and sample standard deviation only",
+    "fit": "deterministic maximum penalized likelihood; intercept unpenalized; fixed L2 coefficient 0.000001",
+    "evaluation_predictions_are_locked": true,
+    "probability_clip": [0.000001, 0.999999]
+  },
+  "statistics": {
+    "cluster": "UTC hour of market start",
+    "within_cluster_reduction": "mean market-level paired log-loss improvement over the fixed baseline",
+    "primary_test": "two-sided one-sample t test of UTC-hour paired improvements with positive direction required",
+    "familywise_alpha": 0.05,
+    "tracks_in_family": 16,
+    "bonferroni_alpha_per_track": 0.003125,
+    "power": 0.8,
+    "material_standardized_effect": 0.34,
+    "required_evaluation_clusters_per_track": 125,
+    "power_formula": "ceil(((z_(1-0.05/(2*16))+z_0.80)/0.34)^2)=125",
+    "yield_margin": 0.85,
+    "candidate_hours_per_split": 148
+  },
+  "calibration": {
+    "metrics": ["log loss", "Brier score", "calibration intercept", "calibration slope"],
+    "strong_pass_gates": [
+      "Bonferroni-adjusted p <= 0.003125",
+      "positive standardized cluster effect >= 0.34",
+      "evaluation Brier score strictly below baseline Brier score",
+      "absolute calibration intercept <= 0.10",
+      "calibration slope between 0.80 and 1.20"
+    ]
+  },
+  "terminal_rules": {
+    "PASS": "at least one frozen track satisfies every strong-pass gate on evaluation",
+    "FAIL": "all 16 tracks have at least 125 eligible evaluation clusters and none satisfies every strong-pass gate",
+    "INCONCLUSIVE": "authority, causality, or power is insufficient for any frozen track; no PASS or FAIL may be claimed",
+    "pass_scope": "may authorize only an isolated experimental Ultra development track; residual-midpoint validation and all promotion gates remain required",
+    "fail_scope": "close or deprioritize the historical external-information lane"
+  }
+}
