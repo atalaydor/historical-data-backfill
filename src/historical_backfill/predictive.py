@@ -186,7 +186,7 @@ def normalize_gamma_market(epoch: int, body: bytes) -> dict[str, object]:
         or any(char not in "0123456789abcdef" for char in condition[2:].lower())
     ):
         raise AuthorityError("Gamma condition identity is malformed")
-    if not isinstance(market_id, (str, int)) or not str(market_id):
+    if not isinstance(market_id, str | int) or not str(market_id):
         raise AuthorityError("Gamma market identity is malformed")
     start = datetime.fromtimestamp(epoch, UTC)
     if _event_start(market, slug) != start:
