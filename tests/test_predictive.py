@@ -133,6 +133,16 @@ class PredictiveValidationTests(unittest.TestCase):
         self.assertEqual(tuple(handoff["supported_tracks"]), TRACK_IDS)
         self.assertEqual(handoff["claim_boundary"]["scoring_owner"], "Gamma/Linux")
 
+        manifest = json.loads(
+            (ROOT / "docs" / "btc-predictive-validation-certification-manifest.json").read_text()
+        )
+        manifest_identity = manifest.pop("identity")
+        self.assertEqual(manifest_identity, hashlib.sha256(canonical_bytes(manifest)).hexdigest())
+        for name, expected in manifest["files"].items():
+            content = (ROOT / "docs" / name).read_bytes()
+            self.assertEqual(expected["bytes"], len(content))
+            self.assertEqual(expected["sha256"], hashlib.sha256(content).hexdigest())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "identity": "2c723fbda0dc0b0a795019a43ad2c91c6262a3d73512e07def70d5889c776f30",
+  "kind": "additive-certification-manifest",
+  "repository": "atalaydor/historical-data-backfill",
+  "scientific_authority": {
+    "commit": "f8fcf5726b9f11ade8666e18dab121595983ec79",
+    "tag": "btc-independent-predictive-validation-v1-authority-v1",
+    "identity": "00cd31e94351518c07ef590e1bff0d24291795adadca77bef8a270c8ac552ef9"
+  },
+  "certification_tag": "btc-independent-predictive-validation-v1-certification-v1",
+  "files": {
+    "btc-predictive-validation-final-certification.json": {
+      "bytes": 5157,
+      "sha256": "49fcb93c38bfe8a1744ab239470f1d51e5c520314a09f360cb91a89ba1b8d5fd"
+    },
+    "btc-predictive-validation-gamma-linux-handoff-v2.json": {
+      "bytes": 6108,
+      "sha256": "9bb43a72d888a826a195141ba715fcdd37c6e294443c7815687915af625c0200"
+    }
+  },
+  "publication": "content-addressed GitHub Release with authenticated read-after-write verification"
+}
