@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "historical-rich-information-run-1",
+  "status": "CANARY_REQUIRED",
+  "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
+  "start_date": "2026-06-01",
+  "end_date_exclusive": "2026-07-09",
+  "segments": [
+    ["2026-06-01", "2026-06-11"],
+    ["2026-06-11", "2026-06-21"],
+    ["2026-06-21", "2026-07-01"],
+    ["2026-07-01", "2026-07-09"]
+  ],
+  "max_parallel": 7,
+  "release_prefix": "historical-rich-information-run-1",
+  "canary_date": "2026-07-08",
+  "source_retention": "transient_runner_only"
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "identity": "historical-rich-information-run-1-prereg-v1",
+  "frozen_at": "2026-08-25T00:00:00Z",
+  "canonical_target": {
+    "repository_path": "C:/letsgo/canonical-polymarket-v1",
+    "source_identity": "3802c8f362aded0ff2dcd001f9e393fbd7f8be85619e70822901d224a348a227",
+    "asset": "BTC",
+    "timeframe_seconds": 300,
+    "interval": {"start": "2026-06-01T00:00:00Z", "end": "2026-07-08T23:00:00Z"},
+    "observed_markets": 5660
+  },
+  "benchmark": {
+    "target": "incremental out-of-sample residual discrimination beyond the frozen provider-free baseline",
+    "development_end": "2026-06-27T00:00:00Z",
+    "evaluation_start": "2026-06-27T00:00:00Z",
+    "dependence": "cluster all 5-minute markets by UTC hour; one effective observation per hour maximum",
+    "multiplicity": "Bonferroni family-wise two-sided alpha 0.05 across 16 preregistered tracks",
+    "power": 0.8,
+    "conservative_yield_margin": 0.85,
+    "projected_raw_markets": 5660,
+    "projected_eligible_markets": 4811,
+    "projected_effective_evaluation_clusters": 128,
+    "decision_relevant_mde_standard_deviations": 0.34,
+    "success": "evaluation effect meets preregistered direction and multiplicity-adjusted threshold with no causal or provenance violation"
+  },
+  "candidates": [
+    {
+      "id": "binance-spot-perp-tape-v1",
+      "class": "A",
+      "decision": "PROCEED",
+      "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
+      "interval": {"start": "2026-06-01", "end": "2026-07-09"},
+      "tracks": ["returns_1_5_15_30_60s", "realized_volatility", "spot_perp_basis", "taker_pressure"],
+      "limitations": "HYPE has USD-M perpetual data but no Binance spot object; no historical BBO/depth is claimed",
+      "estimated_source_bytes": 5800000000,
+      "estimated_runtime_minutes": 35
+    },
+    {
+      "id": "coinbase-btc-usd-60s-v1",
+      "class": "A",
+      "decision": "PROCEED",
+      "assets": ["BTC"],
+      "interval": {"start": "2026-06-01T00:00:00Z", "end": "2026-07-08T23:00:00Z"},
+      "tracks": ["cross_venue_60s_disagreement", "lead_lag_60s"],
+      "estimated_source_bytes": 2000000,
+      "estimated_runtime_minutes": 4
+    },
+    {
+      "id": "arena-cap-book-v1",
+      "class": "B",
+      "decision": "BOUNDED_PILOT",
+      "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB"],
+      "interval": {"start": "2026-06-15T16:21:26Z", "end": "2026-06-17T16:25:33Z"},
+      "pilot_objects": ["daily/cap_book/2026-06-16T162126Z.parquet"],
+      "promotion": "exact identity; >=80% expected BTC windows; median cadence <=3s; p99 gap <=15s; >=95% parseable ladders; crossed two-sided rate <=1%; no timestamp inversion",
+      "abandon": "any identity/causality failure or insufficient effective overlap",
+      "estimated_source_bytes": 52248636,
+      "estimated_runtime_minutes": 5
+    },
+    {
+      "id": "chainlink-current-twap-60s-v1",
+      "class": "A",
+      "decision": "ABANDON",
+      "reason": "current 60-second TWAP rules began after the existing canonical BTC authority ended; no free authoritative historical stream with overlap was found"
+    },
+    {
+      "id": "pmxt-polymarket-full-depth-v2",
+      "class": "B",
+      "decision": "ABANDON",
+      "reason": "public export drops native receive ordering/grouping and cannot deterministically replay full depth"
+    },
+    {
+      "id": "polyorderbooks-5min-l2-v1",
+      "class": "B",
+      "decision": "ABANDON",
+      "reason": "actual files cover only 2026-08-23T09:10Z/12:50Z, after existing canonical settled authority; 352 markets are below the preregistered effective evidence requirement"
+    }
+  ]
+}

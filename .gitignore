@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+work/
+*.zip
+*.parquet
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.csv.gz
+*.jsonl
