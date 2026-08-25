@@ -20,6 +20,8 @@ class ContractTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "run-1.yml").read_text()
         self.assertIn("needs: [canary-binance, canary-coinbase]", workflow)
         self.assertIn("max-parallel: 7", workflow)
+        self.assertIn("historical-backfill assemble-btc", workflow)
+        self.assertIn("needs: [production-btc, production-coinbase]", workflow)
         self.assertIn("historical-run-1-canonical-publication", workflow)
         self.assertNotIn("actions/cache", workflow)
         self.assertNotIn("upload-artifact", workflow)

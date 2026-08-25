@@ -64,7 +64,30 @@ jobs:
       - env: {GITHUB_TOKEN: '${{ github.token }}'}
         run: historical-backfill arena-pilot
 
-  production-binance:
+  production-btc:
+    needs: [canary-binance, canary-coinbase]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions: {contents: write}
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        segment:
+          - {start: '2026-06-01', end: '2026-06-11'}
+          - {start: '2026-06-11', end: '2026-06-21'}
+          - {start: '2026-06-21', end: '2026-07-01'}
+          - {start: '2026-07-01', end: '2026-07-09'}
+    concurrency:
+      group: historical-run-1-stage-btc-${{ matrix.segment.start }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill segment --asset BTC --start '${{ matrix.segment.start }}' --end '${{ matrix.segment.end }}'
+
+  production-other-assets:
     needs: [canary-binance, canary-coinbase]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -73,7 +96,7 @@ jobs:
       fail-fast: false
       max-parallel: 7
       matrix:
-        asset: [BTC, ETH, SOL, XRP, DOGE, BNB, HYPE]
+        asset: [ETH, SOL, XRP, DOGE, BNB, HYPE]
         segment:
           - {start: '2026-06-01', end: '2026-06-11'}
           - {start: '2026-06-11', end: '2026-06-21'}
@@ -102,9 +125,24 @@ jobs:
       - env: {GITHUB_TOKEN: '${{ github.token }}'}
         run: historical-backfill coinbase
 
+  certify-btc:
+    needs: [production-btc, production-coinbase]
+    if: ${{ always() && needs.production-btc.result == 'success' && needs.production-coinbase.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions: {contents: write}
+    concurrency:
+      group: historical-run-1-btc-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill assemble-btc
+
   assemble:
-    needs: [production-binance, production-coinbase]
-    if: ${{ always() && needs.production-binance.result == 'success' && needs.production-coinbase.result == 'success' }}
+    needs: [production-btc, production-other-assets, production-coinbase]
+    if: ${{ always() && needs.production-btc.result == 'success' && needs.production-other-assets.result == 'success' && needs.production-coinbase.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions: {contents: write}

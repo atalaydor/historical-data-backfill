@@ -60,7 +60,7 @@ def arena() -> None:
         shutil.rmtree(built)
 
 
-def assemble() -> None:
+def assemble(selected_assets: tuple[str, ...] = ASSETS) -> None:
     backend = GitHubReleases()
     releases = backend.releases()
     by_tag = {str(item["tag_name"]): item for item in releases}
@@ -71,9 +71,10 @@ def assemble() -> None:
         ("2026-06-21", "2026-07-01"),
         ("2026-07-01", "2026-07-09"),
     )
-    for asset in ASSETS:
+    for asset in selected_assets:
         expected.extend(f"{PREFIX}-stage-{asset.lower()}-{start}-{end}" for start, end in segments)
-    expected.append(f"{PREFIX}-stage-coinbase-btc")
+    if "BTC" in selected_assets:
+        expected.append(f"{PREFIX}-stage-coinbase-btc")
     missing = sorted(set(expected) - by_tag.keys())
     if missing:
         raise AuthorityError(f"assembly missing staging releases: {missing}")
@@ -107,7 +108,8 @@ def assemble() -> None:
                 "source_retention": "transient_runner_only",
             },
         )
-        canonical_tag = f"{PREFIX}-authority-v1"
+        scope = "btc" if selected_assets == ("BTC",) else "seven"
+        canonical_tag = f"{PREFIX}-{scope}-authority-v1"
         backend.publish_directory(canonical_tag, "authority", root)
         backend.finalize(canonical_tag)
 
@@ -124,6 +126,7 @@ def parser() -> argparse.ArgumentParser:
     stage.add_argument("--end", required=True)
     sub.add_parser("coinbase")
     sub.add_parser("arena-pilot")
+    sub.add_parser("assemble-btc")
     sub.add_parser("assemble")
     return result
 
@@ -140,6 +143,8 @@ def main() -> None:
         coinbase()
     elif args.command == "arena-pilot":
         arena()
+    elif args.command == "assemble-btc":
+        assemble(("BTC",))
     elif args.command == "assemble":
         assemble()
     else:
