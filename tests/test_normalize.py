@@ -59,6 +59,26 @@ class NormalizeTests(unittest.TestCase):
                     root / "normalized.parquet",
                 )
 
+    def test_exact_target_cutoff_drops_later_source_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            archive = self._archive(
+                root,
+                [
+                    [1783551599000000, "1", "2", "0", "1", "3"],
+                    [1783551600000000, "2", "3", "1", "2", "4"],
+                ],
+            )
+            target = root / "normalized.parquet"
+            count, _, _ = _normalize_zip(
+                binance_specs("BTC", "2026-07-08")[0],
+                archive,
+                target,
+                maximum_event_ns=1_783_551_600_000_000_000,
+            )
+            self.assertEqual(count, 1)
+            self.assertEqual(pq.read_table(target).num_rows, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

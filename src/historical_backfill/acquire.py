@@ -20,6 +20,7 @@ from .model import AuthorityError, SourceSpec, hash_file, write_json
 
 TRANSFORM = "historical-exchange-normalizer.v1"
 MAX_SOURCE_BYTES = 250_000_000
+TARGET_END_NS = int(datetime(2026, 7, 8, 23, tzinfo=UTC).timestamp() * 1_000_000_000)
 
 
 def acquire_binance_segment(asset: str, start: str, end: str, root: Path) -> Path:
@@ -30,11 +31,12 @@ def acquire_binance_segment(asset: str, start: str, end: str, root: Path) -> Pat
         for day in days(start, end):
             for spec in binance_specs(asset, day):
                 sources.append(_acquire_binance(spec, output, root))
+        logical_end = "2026-07-08T23:00:00Z" if end == "2026-07-09" else end
         manifest = {
             "schema_version": "1.0.0",
             "authority_class": "A",
             "asset": asset,
-            "interval": {"start": start, "end": end},
+            "interval": {"start": start, "end": logical_end},
             "transform": TRANSFORM,
             "sources": sources,
         }
@@ -62,7 +64,12 @@ def _acquire_binance(spec: SourceSpec, output: Path, scratch: Path) -> dict[str,
         raise AuthorityError(f"official checksum mismatch: {spec.url}")
     target = output / f"{stem}.parquet"
     try:
-        rows, first_ns, last_ns = _normalize_zip(spec, archive, target)
+        rows, first_ns, last_ns = _normalize_zip(
+            spec,
+            archive,
+            target,
+            maximum_event_ns=TARGET_END_NS if spec.day == "2026-07-08" else None,
+        )
     finally:
         archive.unlink(missing_ok=True)
     normalized_size, normalized_sha = hash_file(target)
@@ -92,7 +99,12 @@ def _acquire_binance(spec: SourceSpec, output: Path, scratch: Path) -> dict[str,
     }
 
 
-def _normalize_zip(spec: SourceSpec, archive: Path, target: Path) -> tuple[int, int, int]:
+def _normalize_zip(
+    spec: SourceSpec,
+    archive: Path,
+    target: Path,
+    maximum_event_ns: int | None = None,
+) -> tuple[int, int, int]:
     schema = pa.schema(
         [
             ("provider", pa.string()),
@@ -132,6 +144,8 @@ def _normalize_zip(spec: SourceSpec, archive: Path, target: Path) -> tuple[int, 
                     event_ns = _to_ns(int(fields[spec.timestamp_column]), spec.timestamp_unit)
                     if not day_start <= event_ns < day_end:
                         raise AuthorityError("source event outside object UTC day")
+                    if maximum_event_ns is not None and event_ns >= maximum_event_ns:
+                        continue
                     if last_ns is not None and event_ns < last_ns:
                         raise AuthorityError("source event time regressed")
                     first_ns = event_ns if first_ns is None else first_ns

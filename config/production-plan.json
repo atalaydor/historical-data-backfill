@@ -4,7 +4,8 @@
   "status": "REMOTE_RUNNER_BILLING_BLOCKED",
   "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
   "start_date": "2026-06-01",
-  "end_date_exclusive": "2026-07-09",
+  "target_end_exclusive": "2026-07-08T23:00:00Z",
+  "source_object_end_date_exclusive": "2026-07-09",
   "segments": [
     ["2026-06-01", "2026-06-11"],
     ["2026-06-11", "2026-06-21"],

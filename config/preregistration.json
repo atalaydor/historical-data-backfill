@@ -30,7 +30,7 @@
       "class": "A",
       "decision": "PROCEED",
       "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
-      "interval": {"start": "2026-06-01", "end": "2026-07-09"},
+      "interval": {"start": "2026-06-01T00:00:00Z", "end": "2026-07-08T23:00:00Z"},
       "tracks": ["returns_1_5_15_30_60s", "realized_volatility", "spot_perp_basis", "taker_pressure"],
       "limitations": "HYPE has USD-M perpetual data but no Binance spot object; no historical BBO/depth is claimed",
       "estimated_source_bytes": 5800000000,
