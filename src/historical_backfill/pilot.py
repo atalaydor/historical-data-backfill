@@ -35,9 +35,9 @@ def run_arena_pilot(root: Path) -> Path:
         }
         if not required.issubset(parquet.schema_arrow.names):
             raise AuthorityError("Arena schema missing identity/depth fields")
-        last_by_token: dict[tuple[str, str], int] = {}
-        gaps: list[int] = []
+        times_by_token: dict[tuple[str, str], list[int]] = {}
         row_count = 0
+        physical_order_regressions = 0
         parseable = 0
         crossed = 0
         two_sided = 0
@@ -50,13 +50,13 @@ def run_arena_pilot(root: Path) -> Path:
             for row in batch.to_pylist():
                 stamp = int(row["ts_ms"])
                 identity = (str(row["slug"]), str(row["asset_id"]))
-                prior = last_by_token.get(identity)
-                if prior is not None:
-                    if stamp < prior:
-                        raise AuthorityError("Arena capture order regressed within token")
-                    gaps.append(stamp - prior)
-                last_by_token[identity] = stamp
+                times = times_by_token.setdefault(identity, [])
+                if times and stamp < times[-1]:
+                    physical_order_regressions += 1
+                times.append(stamp)
                 row_count += 1
+                if row_count > 10_000_000:
+                    raise AuthorityError("Arena pilot crossed row breaker")
                 first_capture = stamp if first_capture is None else min(first_capture, stamp)
                 last_capture = stamp if last_capture is None else max(last_capture, stamp)
                 slugs.add(str(row["slug"]))
@@ -73,6 +73,11 @@ def run_arena_pilot(root: Path) -> Path:
                     pass
                 if stamp > int(row["end_ts"]) * 1000 + 5_000:
                     inversion += 1
+        gaps = [
+            later - earlier
+            for times in times_by_token.values()
+            for earlier, later in zip(sorted(times), sorted(times)[1:], strict=False)
+        ]
         if row_count == 0 or not gaps or first_capture is None or last_capture is None:
             raise AuthorityError("Arena pilot object contains no usable sequence")
         gaps.sort()
@@ -99,7 +104,7 @@ def run_arena_pilot(root: Path) -> Path:
             "acquired_at_ns": time.time_ns(),
             "rows": row_count,
             "slugs": len(slugs),
-            "token_identities": len(last_by_token),
+            "token_identities": len(times_by_token),
             "assets": sorted(assets),
             "first_capture_ms": first_capture,
             "last_capture_ms": last_capture,
@@ -109,6 +114,7 @@ def run_arena_pilot(root: Path) -> Path:
             "parseable_two_sided_rate": parseable / row_count,
             "crossed_two_sided_rate": crossed / max(two_sided, 1),
             "timestamp_inversions": inversion,
+            "physical_order_regressions": physical_order_regressions,
             "criteria": criteria,
         }
         write_json(output / "pilot-evidence.json", evidence)

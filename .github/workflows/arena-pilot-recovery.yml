@@ -1,0 +1,24 @@
+name: Arena pilot bounded recovery
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  arena-pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions: {contents: write}
+    concurrency:
+      group: historical-run-1-arena-pilot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir . ruff==0.12.12 mypy==1.17.1
+      - run: python -m unittest discover -s tests -v
+      - run: ruff check .
+      - run: mypy
+      - run: git diff --check
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill arena-pilot

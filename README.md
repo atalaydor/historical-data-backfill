@@ -1,6 +1,6 @@
 # Historical rich-information backfill
 
-Private, finite acquisition control plane for source evidence relevant to settled Polymarket
+Public, finite acquisition control plane for source evidence relevant to settled Polymarket
 5-minute Up/Down markets. It never modifies prospective V51/V55/V57 authorities.
 
 Run 1 freezes the shortest recent interval supported by the existing BTC 5-minute canonical

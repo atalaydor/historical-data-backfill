@@ -1,7 +1,8 @@
 {
   "schema_version": "1.0.0",
   "dataset_id": "historical-rich-information-run-1",
-  "status": "REMOTE_RUNNER_BILLING_BLOCKED",
+  "status": "PRODUCTION_RUNNING",
+  "active_run_id": 32840124638,
   "assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"],
   "start_date": "2026-06-01",
   "target_end_exclusive": "2026-07-08T23:00:00Z",

@@ -1,6 +1,6 @@
 # Repository instructions
 
-- This private repository is a finite control plane for free historical evidence relevant to Polymarket 5-minute Up/Down markets for BTC, ETH, SOL, XRP, DOGE, BNB, and HYPE.
+- This public repository is a finite control plane for free historical evidence relevant to Polymarket 5-minute Up/Down markets for BTC, ETH, SOL, XRP, DOGE, BNB, and HYPE.
 - Keep prospective-compatible Class A evidence physically and logically separate from historical-only Class B evidence.
 - Never add credentials, wallets, strategy material, live trading, paid data, or synthetic/interpolated order books.
 - Windows is control plane only. Historical source archives are transient on GitHub-hosted runners; immutable content-addressed GitHub Releases are permanent authority.
