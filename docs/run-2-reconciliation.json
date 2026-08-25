@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0.0",
+  "identity": "historical-rich-information-run-2-reconciliation-v1",
+  "reconciled_at": "2026-08-25T00:00:00Z",
+  "repository": "atalaydor/historical-data-backfill",
+  "reconciled_git_commit": "af4a942563d88df60bb8d7512551addfd9389986",
+  "runs": {
+    "original": 32840124638,
+    "arena_recovery": 32840372391,
+    "residual_recovery": []
+  },
+  "interval": {
+    "start": "2026-06-01T00:00:00Z",
+    "end_exclusive": "2026-07-08T23:00:00Z"
+  },
+  "remote_inventory": {
+    "release_count": 40,
+    "draft_staging_release_count": 38,
+    "published_authority_release_count": 2,
+    "release_asset_count": 1056,
+    "release_asset_bytes": 8574534135,
+    "stage_manifest_count": 29,
+    "missing_stage_releases": 0,
+    "non_uploaded_assets": 0,
+    "invalid_content_addressed_names": 0,
+    "duplicate_release_tags": 0,
+    "duplicate_logical_filenames": 0,
+    "unexpected_or_out_of_plan_assets": 0,
+    "stage_logical_inventory_mismatches": 0,
+    "authority_inventory_mismatches": 0
+  },
+  "binance": {
+    "planned_segments": 28,
+    "durable_segments": 28,
+    "unfinished_segments": 0,
+    "completion_percent": 100.0,
+    "source_objects": 988,
+    "source_bytes": 4668049328,
+    "normalized_bytes": 8392344563,
+    "assets": {
+      "BTC": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 1529182303, "normalized_bytes": 2535598979, "rows": 113569777},
+      "ETH": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 1419284068, "normalized_bytes": 2475764205, "rows": 96429294},
+      "SOL": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 338337490, "normalized_bytes": 687180888, "rows": 20578715},
+      "XRP": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 264965948, "normalized_bytes": 537347329, "rows": 16047988},
+      "DOGE": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 205393080, "normalized_bytes": 422462378, "rows": 13052261},
+      "BNB": {"planned_segments": 4, "durable_segments": 4, "source_objects": 152, "source_bytes": 424606796, "normalized_bytes": 792293640, "rows": 28158104},
+      "HYPE": {"planned_segments": 4, "durable_segments": 4, "source_objects": 76, "source_bytes": 486279643, "normalized_bytes": 941697144, "rows": 36128324}
+    }
+  },
+  "coinbase_btc": {
+    "planned_acquisitions": 1,
+    "durable_acquisitions": 1,
+    "unfinished_acquisitions": 0,
+    "completion_percent": 100.0,
+    "requests": 183,
+    "response_bytes": 3225040,
+    "expected_minute_slots": 54660,
+    "observed_rows": 54647,
+    "missing_slots": 13,
+    "observed_slot_percent": 99.976216611782,
+    "missing_policy": "recorded_no_synthesis",
+    "normalized_bytes": 2223291,
+    "normalized_sha256": "9046dc6e26e3e507876aa9076d41ae4b4dec903160279b485ee0c1ed5cccf403",
+    "manifest_identity": "7dd1618b5991c68434a13055faac7294f2952058445e39927ee59fb9bf1e1058"
+  },
+  "arena_class_b_pilot": {
+    "authoritative_run": 32840372391,
+    "planned_objects": 1,
+    "durable_objects": 1,
+    "source_bytes": 52248636,
+    "source_sha256": "76c692b4ba3752a3dec2753206f935ef1d22fbe10997d2bf6e80f40eecb25896",
+    "rows": 1435911,
+    "assets": ["BNB", "BTC", "DOGE", "ETH", "SOL", "XRP"],
+    "market_slugs": 1746,
+    "token_identities": 3492,
+    "median_gap_ms": 1002.0,
+    "p99_gap_ms": 15337.0,
+    "maximum_gap_ms": 88961.0,
+    "parseable_two_sided_rate": 0.8624141747,
+    "crossed_two_sided_rate": 0.0006872047,
+    "timestamp_inversions": 66804,
+    "physical_order_regressions": 175,
+    "decision": "ABANDON",
+    "failed_frozen_gates": ["p99_gap_ms<=15000", "parseable_two_sided_rate>=0.95", "timestamp_inversions==0"]
+  },
+  "authorities": {
+    "btc": {
+      "tag": "historical-rich-information-run-1-btc-authority-v1",
+      "release_id": 376341228,
+      "release_url": "https://github.com/atalaydor/historical-data-backfill/releases/tag/historical-rich-information-run-1-btc-authority-v1",
+      "asset_id": 529083033,
+      "asset_name": "authority--0e691f47e2111eebda9f367854f6f301dad7f519f3cc6ba9682ab8ec03cabdb2--authority-index.json",
+      "content_identity": "0e691f47e2111eebda9f367854f6f301dad7f519f3cc6ba9682ab8ec03cabdb2",
+      "complete_stage_count": 5,
+      "indexed_assets": 158,
+      "indexed_bytes": 2538025000,
+      "independent_redownload_sha256_verified": true,
+      "live_inventory_mismatches": 0
+    },
+    "seven_asset": {
+      "tag": "historical-rich-information-run-1-seven-authority-v1",
+      "release_id": 376342773,
+      "release_url": "https://github.com/atalaydor/historical-data-backfill/releases/tag/historical-rich-information-run-1-seven-authority-v1",
+      "asset_id": 529086389,
+      "asset_name": "authority--e0fb883c14e1318832c298b440aecbf38035bd791cb76d0e2ac1d13c2e7e4e2f--authority-index.json",
+      "content_identity": "e0fb883c14e1318832c298b440aecbf38035bd791cb76d0e2ac1d13c2e7e4e2f",
+      "complete_stage_count": 29,
+      "indexed_assets": 1018,
+      "indexed_bytes": 8395657846,
+      "independent_redownload_sha256_verified": true,
+      "live_inventory_mismatches": 0
+    }
+  },
+  "result": {
+    "residual": [],
+    "running_actions": [],
+    "btc_certification_ready": true,
+    "btc_certified": true,
+    "remaining_acquisition_wall_clock_minutes": 0,
+    "next_trigger": "Import the BTC handoff on Linux and execute the preregistered residual-information benchmark; do not derive features in this evidence repository."
+  }
+}

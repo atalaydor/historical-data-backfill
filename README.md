@@ -12,4 +12,9 @@ The remote topology is isolated compute, one immutable content-addressed staging
 asset/segment, deterministic reconciliation, then a short assembly publication. Source archives
 exist only in runner temporary directories and are deleted before job completion.
 
-See `docs/run-1-authority.md` and `config/preregistration.json`.
+Run 2 reconciled all 29 production stages against authenticated Release authority: acquisition is
+complete, BTC and seven-asset authority indexes are certified, and the frozen Arena Class-B pilot
+is abandoned after failing its preregistered quality gates. No residual acquisition remains.
+
+See `docs/run-1-authority.md`, `docs/run-2-reconciliation.json`,
+`docs/btc-gamma-linux-handoff.json`, and `config/preregistration.json`.

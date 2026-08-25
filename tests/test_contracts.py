@@ -26,6 +26,23 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("actions/cache", workflow)
         self.assertNotIn("upload-artifact", workflow)
 
+    def test_run_2_reconciliation_closes_acquisition_without_recovery(self) -> None:
+        raw = json.loads((ROOT / "docs" / "run-2-reconciliation.json").read_text())
+        self.assertEqual(raw["binance"]["planned_segments"], 28)
+        self.assertEqual(raw["binance"]["durable_segments"], 28)
+        self.assertEqual(raw["coinbase_btc"]["durable_acquisitions"], 1)
+        self.assertEqual(raw["arena_class_b_pilot"]["decision"], "ABANDON")
+        self.assertEqual(raw["result"]["residual"], [])
+        self.assertTrue(raw["result"]["btc_certified"])
+
+    def test_btc_handoff_is_class_a_causal_and_immutable(self) -> None:
+        raw = json.loads((ROOT / "docs" / "btc-gamma-linux-handoff.json").read_text())
+        self.assertEqual(raw["external_evidence"]["class"], "A")
+        self.assertEqual(raw["external_evidence"]["complete_stages"], 5)
+        self.assertFalse(raw["integrity_contract"]["class_b_evidence_allowed"])
+        self.assertTrue(raw["integrity_contract"]["require_event_time_at_or_before_feature_cutoff"])
+        self.assertFalse(raw["integrity_contract"]["prospective_authority_mutation_allowed"])
+
 
 if __name__ == "__main__":
     unittest.main()

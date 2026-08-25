@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "identity": "historical-rich-information-run-1-btc-gamma-linux-handoff-v1",
+  "asset": "BTC",
+  "target": {
+    "authority_kind": "settled_polymarket_5m",
+    "canonical_source_identity": "3802c8f362aded0ff2dcd001f9e393fbd7f8be85619e70822901d224a348a227",
+    "timeframe_seconds": 300,
+    "observed_markets": 5660,
+    "interval": {"start": "2026-06-01T00:00:00Z", "end_exclusive": "2026-07-08T23:00:00Z"}
+  },
+  "external_evidence": {
+    "class": "A",
+    "authority_tag": "historical-rich-information-run-1-btc-authority-v1",
+    "release_id": 376341228,
+    "release_url": "https://github.com/atalaydor/historical-data-backfill/releases/tag/historical-rich-information-run-1-btc-authority-v1",
+    "authority_asset_id": 529083033,
+    "authority_asset_name": "authority--0e691f47e2111eebda9f367854f6f301dad7f519f3cc6ba9682ab8ec03cabdb2--authority-index.json",
+    "authority_content_identity": "0e691f47e2111eebda9f367854f6f301dad7f519f3cc6ba9682ab8ec03cabdb2",
+    "providers": ["Binance", "Coinbase Exchange"],
+    "complete_stages": 5,
+    "indexed_assets": 158,
+    "indexed_bytes": 2538025000,
+    "normalized_data_bytes": 2537822270,
+    "rows": 113624424,
+    "coinbase_missing_minute_slots": 13,
+    "missing_policy": "recorded_no_synthesis"
+  },
+  "integrity_contract": {
+    "verify_authority_asset_sha256_before_use": true,
+    "verify_each_indexed_asset_name_size_and_sha256": true,
+    "require_event_time_at_or_before_feature_cutoff": true,
+    "archive_and_acquisition_timestamps_are_not_event_time": true,
+    "class_b_evidence_allowed": false,
+    "feature_derivation_location": "Linux factory",
+    "prospective_authority_mutation_allowed": false
+  },
+  "benchmark": {
+    "preregistration_identity": "historical-rich-information-run-1-prereg-v1",
+    "development_end": "2026-06-27T00:00:00Z",
+    "evaluation_start": "2026-06-27T00:00:00Z",
+    "projected_eligible_markets": 4811,
+    "projected_effective_evaluation_clusters": 128,
+    "multiplicity": "Bonferroni family-wise two-sided alpha 0.05 across 16 preregistered tracks",
+    "power": 0.8,
+    "decision_relevant_mde_standard_deviations": 0.34
+  }
+}
