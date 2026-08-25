@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "certification_identity": "3a7cf9ebf85e9ea44fcf1005bb4d36f38bebc95b893dfdcf0d6c1f0a812a4255",
+  "certification_scope": "additive metadata and handoff completion only; scientific evidence and frozen experiment are unchanged",
+  "repository": "atalaydor/historical-data-backfill",
+  "authority": {
+    "commit": "f8fcf5726b9f11ade8666e18dab121595983ec79",
+    "tag": "btc-independent-predictive-validation-v1-authority-v1",
+    "release_id": 376474891,
+    "release_url": "https://github.com/atalaydor/historical-data-backfill/releases/tag/btc-independent-predictive-validation-v1-authority-v1",
+    "authority_identity": "00cd31e94351518c07ef590e1bff0d24291795adadca77bef8a270c8ac552ef9",
+    "manifest_identity": "12e95a17039037c5e71c2647728a8077006d231780f4ddb6eb1102c7f872687c",
+    "non_draft": true,
+    "prerelease": false,
+    "tag_target_verified": true
+  },
+  "frozen_bindings": {
+    "preregistration_identity": "e99ee179e34b920e0bbc611c786911dd82b372ce23d2ee4be5e612fa1f6f338a",
+    "acquisition_plan_identity": "87224486fc3ff65b044a45c4005f42cc55dbd940d7212348d4ac9973139058e8",
+    "interval": ["2026-07-08T23:00:00Z", "2026-07-21T07:00:00Z"],
+    "development_end": "2026-07-15T03:00:00Z",
+    "candidate_markets": 3552,
+    "eligible_markets": 3552,
+    "excluded_markets": 0,
+    "development_markets": 1776,
+    "development_utc_hour_clusters": 148,
+    "evaluation_markets": 1776,
+    "evaluation_utc_hour_clusters": 148
+  },
+  "power": {
+    "familywise_alpha": 0.05,
+    "tracks": 16,
+    "bonferroni_alpha_per_track": 0.003125,
+    "power": 0.8,
+    "material_standardized_effect": 0.34,
+    "required_evaluation_utc_hour_clusters": 125,
+    "candidate_hours_per_side": 148,
+    "yield_margin": 0.85,
+    "gate": "PASS"
+  },
+  "target": {
+    "provider": "official-polymarket-gamma",
+    "target_contract_identity": "5a1008d579d87e1e7b79ac9fde60275c014ec63b7375b33d34bc04c68ab8e5b3",
+    "cohort_sha256": "6a4b07ef62c8cf2b77fcc4f0f26d43e3afb4d56249af5303ab5262a2828fec6a",
+    "cohort_bytes": 3211676,
+    "unique_epochs": 3552,
+    "unique_market_ids": 3552,
+    "unique_condition_ids": 3552,
+    "target_stage_releases": 8,
+    "target_stage_assets": 16,
+    "target_stage_manifest_identities": [
+      "0515cdf1276896250c9e87f49de603dce5f6fa3449ffb7feaf0cb4bcc3193845",
+      "b4447759f9044b7648ee18d674d52bc96b921fb54660bfe793ddc14a3e18734e",
+      "27d243586e27b48e40479b6a6efdb5b7f61b53758fd13de98f75add101fc0c85",
+      "ee2db15b1847ab94a096e84ad481d536ab21aacd7dc0a29178c53e990aefcaca",
+      "aa063a07d2cb615698904ec6da22975010556f42be30cb59286b17d03a027361",
+      "255015cb624d38a3ce21a8fcbcd5907ad70a115d1be91237864e851ee042b0eb",
+      "b202b74f7565e1715947f0004e36805ab0e2719d5beea9f22fe55ec71e0a711e",
+      "76b43a43f7b93216283c2c61391605bada31d230b4923e76a9059a69ef9ee874"
+    ]
+  },
+  "external": {
+    "external_authority_identity": "f27ed8640571c75b67bbb77c9a4fcd27ce3f144180ab290d3eee1e5e129302dc",
+    "stage_releases": 5,
+    "stage_assets": 62,
+    "binance": {
+      "provider": "official-binance-public-data",
+      "instrument": "BTCUSDT",
+      "source_objects": 56,
+      "normalized_rows": 22600387,
+      "utc_days": 14,
+      "families": ["spot_agg_trades", "spot_klines_1s", "um_agg_trades", "um_klines_1m"],
+      "stage_manifest_identities": [
+        "f3aec1ae30943cb7eac48d41af7fb157aa06441a3501b808b61d5f709c9fc4a8",
+        "84c9e521c4d9605131a5620677e842f7b8940b258cdd164c62b0c8843f6304ab",
+        "086981d0d88a80828a6c71f728abd21318116d91c13b087fc41c816c7ad35856",
+        "4e58c65937af020d44b22f55e7e3bc44680ba5521a7c036edd6cde0ef421792a"
+      ]
+    },
+    "coinbase": {
+      "provider": "official-coinbase-exchange",
+      "instrument": "BTC-USD",
+      "granularity_seconds": 60,
+      "normalized_rows": 17760,
+      "normalized_sha256": "e7290c5a042a47db8b8a7a007ead187c14dd4bad6a19fb15d62f086025aa697f",
+      "stage_manifest_identity": "ec9245dd422049909fcac2ee13e089e771c127af6afdba4ece3c89b3374b28af"
+    }
+  },
+  "remote_reconciliation": {
+    "final_release_assets": 4,
+    "staging_releases": 13,
+    "staging_assets": 78,
+    "asset_states": "all_uploaded",
+    "filename_size_digest_match": true,
+    "unexpected_assets": 0,
+    "missing_assets": 0,
+    "partial_assets": 0,
+    "divergent_assets": 0,
+    "duplicate_assets": 0,
+    "independent_final_redownload_verified": true,
+    "historical_payload_downloaded_to_windows": false
+  },
+  "chronology": {
+    "closed_experiment": ["2026-06-01T00:00:00Z", "2026-07-08T23:00:00Z"],
+    "strict_residual_evidence": ["2026-08-22T21:40:00Z", "2026-08-23T11:05:00Z"],
+    "half_open_intersections": 0
+  },
+  "exclusions": {
+    "target": 0,
+    "missing_source_objects": 0,
+    "post_outcome_cohort_changes": 0
+  },
+  "claim_boundary": {
+    "tests": "whether the frozen external-information families independently predict BTC 5-minute Up/Down outcomes",
+    "does_not_establish": [
+      "residual edge beyond Polymarket midpoint",
+      "production eligibility",
+      "confirmation",
+      "final strategy promotion"
+    ],
+    "scoring_owner": "Gamma/Linux",
+    "scored_on_windows": false
+  }
+}

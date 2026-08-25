@@ -104,6 +104,35 @@ class PredictiveValidationTests(unittest.TestCase):
         self.assertEqual(raw["authorities"][1]["eligible_complete_utc_hour_clusters"], 11)
         self.assertEqual(raw["decision"], "STEP_1_FAIL_PROCEED_STEP_2")
 
+    def test_additive_final_certification_and_handoff_are_content_addressed(self) -> None:
+        certification = json.loads(
+            (ROOT / "docs" / "btc-predictive-validation-final-certification.json").read_text()
+        )
+        certification_identity = certification.pop("certification_identity")
+        self.assertEqual(
+            certification_identity,
+            hashlib.sha256(canonical_bytes(certification)).hexdigest(),
+        )
+        self.assertEqual(
+            certification["authority"]["authority_identity"],
+            "00cd31e94351518c07ef590e1bff0d24291795adadca77bef8a270c8ac552ef9",
+        )
+        self.assertEqual(certification["frozen_bindings"]["eligible_markets"], 3552)
+        self.assertEqual(certification["frozen_bindings"]["evaluation_utc_hour_clusters"], 148)
+        self.assertEqual(certification["power"]["gate"], "PASS")
+
+        handoff = json.loads(
+            (ROOT / "docs" / "btc-predictive-validation-gamma-linux-handoff-v2.json").read_text()
+        )
+        handoff_identity = handoff.pop("handoff_identity")
+        self.assertEqual(handoff_identity, hashlib.sha256(canonical_bytes(handoff)).hexdigest())
+        self.assertEqual(
+            handoff["acquisition_plan"]["identity"],
+            "87224486fc3ff65b044a45c4005f42cc55dbd940d7212348d4ac9973139058e8",
+        )
+        self.assertEqual(tuple(handoff["supported_tracks"]), TRACK_IDS)
+        self.assertEqual(handoff["claim_boundary"]["scoring_owner"], "Gamma/Linux")
+
 
 if __name__ == "__main__":
     unittest.main()

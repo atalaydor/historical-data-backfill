@@ -1,0 +1,113 @@
+{
+  "schema_version": "2.0.0",
+  "handoff_identity": "e5b5c21005daef42c4c20abb07d9ffd6bc9eeddc162ffdec59dd7b59a4490a83",
+  "kind": "additive_handoff_completion",
+  "repository": "atalaydor/historical-data-backfill",
+  "authority_commit": "f8fcf5726b9f11ade8666e18dab121595983ec79",
+  "authority_tag": "btc-independent-predictive-validation-v1-authority-v1",
+  "authority_release_id": 376474891,
+  "authority_identity": "00cd31e94351518c07ef590e1bff0d24291795adadca77bef8a270c8ac552ef9",
+  "authority_manifest_identity": "12e95a17039037c5e71c2647728a8077006d231780f4ddb6eb1102c7f872687c",
+  "preregistration": {
+    "identity": "e99ee179e34b920e0bbc611c786911dd82b372ce23d2ee4be5e612fa1f6f338a",
+    "path": "config/btc-predictive-validation-preregistration.json",
+    "immutable_url": "https://raw.githubusercontent.com/atalaydor/historical-data-backfill/f8fcf5726b9f11ade8666e18dab121595983ec79/config/btc-predictive-validation-preregistration.json"
+  },
+  "acquisition_plan": {
+    "identity": "87224486fc3ff65b044a45c4005f42cc55dbd940d7212348d4ac9973139058e8",
+    "path": "config/btc-predictive-validation-plan.json",
+    "immutable_url": "https://raw.githubusercontent.com/atalaydor/historical-data-backfill/f8fcf5726b9f11ade8666e18dab121595983ec79/config/btc-predictive-validation-plan.json"
+  },
+  "frozen_experiment": {
+    "interval": ["2026-07-08T23:00:00Z", "2026-07-21T07:00:00Z"],
+    "development_end": "2026-07-15T03:00:00Z",
+    "candidate_markets": 3552,
+    "eligible_markets": 3552,
+    "excluded_markets": 0,
+    "development": {"markets": 1776, "utc_hour_clusters": 148},
+    "evaluation": {"markets": 1776, "utc_hour_clusters": 148},
+    "power": {
+      "familywise_alpha": 0.05,
+      "bonferroni_tracks": 16,
+      "per_track_alpha": 0.003125,
+      "power": 0.8,
+      "material_standardized_effect": 0.34,
+      "minimum_evaluation_utc_hour_clusters": 125,
+      "yield_margin": 0.85,
+      "gate": "PASS"
+    }
+  },
+  "target_authority": {
+    "provider": "official-polymarket-gamma",
+    "identity": "5a1008d579d87e1e7b79ac9fde60275c014ec63b7375b33d34bc04c68ab8e5b3",
+    "cohort_asset_id": 529324991,
+    "cohort_asset_name": "step-2--authority--6a4b07ef62c8cf2b77fcc4f0f26d43e3afb4d56249af5303ab5262a2828fec6a--target-cohort.jsonl",
+    "cohort_bytes": 3211676,
+    "cohort_sha256": "6a4b07ef62c8cf2b77fcc4f0f26d43e3afb4d56249af5303ab5262a2828fec6a",
+    "membership_order": "order field ascending from 0 through 3551",
+    "row_contract": "canonical slug/market/condition, exact start/end/cutoff, official final outcome, UTC-hour cluster, split, raw Gamma SHA-256 and immutable staging locator"
+  },
+  "external_authority": {
+    "identity": "f27ed8640571c75b67bbb77c9a4fcd27ce3f144180ab290d3eee1e5e129302dc",
+    "inventory_asset_id": 529324975,
+    "inventory_asset_name": "step-2--authority--493160a99eee7fb26fc255e97608772ae5c49dec778022ce61c226589c73fd71--authority-index.json",
+    "inventory_sha256": "493160a99eee7fb26fc255e97608772ae5c49dec778022ce61c226589c73fd71",
+    "providers": [
+      {"provider": "official-binance-public-data", "instrument": "BTCUSDT", "products": ["spot", "USD-M perpetual"]},
+      {"provider": "official-coinbase-exchange", "instrument": "BTC-USD", "granularity_seconds": 60}
+    ],
+    "causality": [
+      "use only exchange event_time_ns at or before the market decision_cutoff",
+      "latest aggregate-trade observations have a frozen maximum age of two seconds",
+      "one-second previous-tick grids have a frozen maximum staleness of two seconds",
+      "Coinbase observations use only complete 60-second buckets ending at or before cutoff",
+      "missing observations cause track-market exclusion without interpolation, lookahead or substitution",
+      "archive, acquisition and receipt times are provenance and never feature event time"
+    ]
+  },
+  "supported_tracks": [
+    "binance_spot_return_1s",
+    "binance_spot_return_5s",
+    "binance_spot_return_15s",
+    "binance_spot_return_30s",
+    "binance_spot_return_60s",
+    "binance_perpetual_return_1s",
+    "binance_perpetual_return_5s",
+    "binance_perpetual_return_15s",
+    "binance_perpetual_return_30s",
+    "binance_perpetual_return_60s",
+    "joint_60s_realized_volatility",
+    "spot_perpetual_basis",
+    "spot_taker_pressure_60s",
+    "perpetual_taker_pressure_60s",
+    "binance_coinbase_disagreement_60s",
+    "coinbase_lead_lag"
+  ],
+  "exclusions_and_gaps": {
+    "target_exclusions": 0,
+    "missing_source_objects": 0,
+    "post_outcome_cohort_shrinkage": false,
+    "runtime_policy": "any missing track observation fails closed for that track-market under the preregistration"
+  },
+  "linux_import": [
+    "gh release download btc-independent-predictive-validation-v1-authority-v1 --repo atalaydor/historical-data-backfill --dir btc-independent-predictive-validation-v1",
+    "verify the four downloaded sizes and SHA-256 values against their content-addressed names and manifest.json",
+    "read target-cohort.jsonl in ascending order; do not add, remove or reorder rows",
+    "read authority-index.json and download each target_staging and external_staging asset by its authenticated asset_id into a transient Linux materialization directory",
+    "verify every staging asset state, byte size and SHA-256 from its content-addressed name before use",
+    "derive only the 16 frozen features from event_time_ns under the preregistered causal and missing-data rules",
+    "score only on Gamma/Linux; never use development outcomes to alter the frozen evaluation design"
+  ],
+  "claim_boundary": {
+    "tests": "whether the frozen external-information families independently predict BTC 5-minute Up/Down outcomes",
+    "does_not_establish": [
+      "residual edge beyond Polymarket midpoint",
+      "production eligibility",
+      "confirmation",
+      "final strategy promotion"
+    ],
+    "pass_consequence": "may authorize only an isolated experimental Ultra development track",
+    "promotion_requirement": "separate residual-midpoint evidence and all existing confirmation/promotion gates remain required",
+    "scoring_owner": "Gamma/Linux"
+  }
+}
