@@ -830,6 +830,14 @@ def _row_key(row: dict[str, Any]) -> tuple[str, int, str, str]:
 
 def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
     ordered = sorted((copy.deepcopy(row) for row in rows), key=_row_key)
+    if not ordered:
+        ordered = [
+            {
+                "schema_version": "prospective-empty-set.v1",
+                "logical_file": path.name,
+                "row_count": 0,
+            }
+        ]
     path.write_bytes(b"".join(canonical_bytes(row) for row in ordered))
 
 
@@ -962,9 +970,17 @@ def _verify_authenticated_stage(
 
 
 def _lines(path: Path) -> list[dict[str, Any]]:
-    if path.stat().st_size == 0:
+    rows = _read_jsonl(path, path.read_text(encoding="utf-8").count("\n"))
+    marker = {
+        "schema_version": "prospective-empty-set.v1",
+        "logical_file": path.name,
+        "row_count": 0,
+    }
+    if rows == [marker]:
         return []
-    return _read_jsonl(path, path.read_text(encoding="utf-8").count("\n"))
+    if any(item.get("schema_version") == "prospective-empty-set.v1" for item in rows):
+        raise AuthorityError("empty-set marker is mixed with authority rows")
+    return rows
 
 
 def _download_release_assets(
@@ -1149,6 +1165,7 @@ def reconcile(derived_tag: str, output_repository: str | None = None) -> dict[st
                 "--dir prospective-derived",
                 "verify every content-addressed asset name, byte size, and SHA-256",
                 "verify derived-manifest.json identity and its exact logical file inventory",
+                "treat an exact prospective-empty-set.v1 envelope as zero rows",
                 "import primitives and exclusions without adding, repairing, or reordering rows",
                 "derive/freeze research features and perform all scientific scoring "
                 "only on Gamma/Linux",

@@ -26,6 +26,10 @@ Only exact unfinished chunks need rerunning. Assembly orders sealed partition or
 row keys, rejects missing/duplicate/divergent market populations, publishes a draft derived Release,
 and reconciliation independently redownloads and hashes every asset before adding the compact
 handoff and finalizing. Actions artifacts and staging drafts are never canonical authority.
+An otherwise zero-byte logical JSONL is represented by the single authenticated
+`prospective-empty-set.v1` envelope; assembly validates and removes it before combining rows, and a
+final empty logical set retains that explicit envelope because GitHub Release assets must be
+non-empty.
 
 Processing identity binds the exact source commit, Python implementation/version/cache tag,
 `ubuntu-24.04`, pinned setup/upload/download Actions, sealed input-manifest identity,
@@ -82,8 +86,9 @@ counts and reasons; every content-addressed asset name/hash/size and Release loc
 reconciliation identity; and handoff identity/path.
 
 Linux imports without reacquisition using the handoff's `gh release download` command, verifies each
-asset name/size/SHA-256, verifies the derived-manifest identity and inventory, and imports primitives
-and exclusions without adding, repairing, or reordering rows. Linux then derives/freezes its own
+asset name/size/SHA-256, verifies the derived-manifest identity and inventory, treats an exact
+`prospective-empty-set.v1` envelope as zero rows, and imports primitives and exclusions without
+adding, repairing, or reordering rows. Linux then derives/freezes its own
 research features and alone performs scientific scoring.
 
 Canary tags contain `prospective-plane-canary` and all fixture contracts contain namespace
