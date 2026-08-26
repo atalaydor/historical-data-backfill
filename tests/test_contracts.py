@@ -63,6 +63,9 @@ class ContractTests(unittest.TestCase):
         self.assertIn("permissions: {contents: read}", workflow)
         self.assertIn("permissions: {contents: write}", workflow)
         self.assertIn("max-parallel: 4", workflow)
+        self.assertIn(
+            "authority_type }}-${{ needs.validate-input.outputs.processing_identity", workflow
+        )
         self.assertIn("plane-negative-canary", canary)
         self.assertIn("authenticated-rerun-v55", canary)
         self.assertNotIn("score", workflow.lower())

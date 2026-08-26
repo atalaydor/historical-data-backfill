@@ -4,7 +4,6 @@ import copy
 import hashlib
 import importlib.metadata
 import json
-import os
 import platform
 import re
 import shutil
@@ -462,8 +461,7 @@ def fetch_partition(
 def runtime_identity() -> dict[str, object]:
     return {
         "runner_contract": "ubuntu-24.04",
-        "runner_image_os": os.environ.get("ImageOS", "local-non-actions"),
-        "runner_image_version": os.environ.get("ImageVersion", "local-non-actions"),
+        "container_contract": "none; isolated GitHub-hosted ubuntu-24.04 runner",
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
         "python_cache_tag": sys.implementation.cache_tag,
