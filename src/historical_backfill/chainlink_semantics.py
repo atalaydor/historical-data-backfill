@@ -62,7 +62,7 @@ def _extract(payload: object, slug: str, expected_window: int) -> dict[str, obje
         raise AuthorityError(f"Gamma equality rule is absent: {slug}")
     opening = metadata.get("priceToBeat")
     final = metadata.get("finalPrice")
-    if not isinstance(opening, (str, int, float)) or not isinstance(final, (str, int, float)):
+    if not isinstance(opening, str | int | float) or not isinstance(final, str | int | float):
         raise AuthorityError(f"Gamma opening/final authority is absent: {slug}")
     return {
         "slug": slug,
