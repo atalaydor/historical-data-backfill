@@ -107,7 +107,7 @@ jobs:
           retention-days: 1
 
   stage:
-    needs: transform
+    needs: [validate-input, transform]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions: {contents: write}
