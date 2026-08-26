@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -22,6 +24,26 @@ from .predictive import (
 )
 from .predictive import (
     stage_target as stage_predictive_target,
+)
+from .prospective_plane import (
+    assemble as assemble_prospective,
+)
+from .prospective_plane import (
+    build_chunk as build_prospective_chunk,
+)
+from .prospective_plane import (
+    contract_output_lines,
+    load_remote_contract_from_args,
+    negative_canary,
+    processing_plan,
+    publish_fixture_inputs,
+    validate_chunk_indexes,
+)
+from .prospective_plane import (
+    reconcile as reconcile_prospective,
+)
+from .prospective_plane import (
+    stage_chunk as stage_prospective_chunk,
 )
 from .release import GitHubReleases
 
@@ -152,7 +174,46 @@ def parser() -> argparse.ArgumentParser:
     predictive_coinbase.add_argument("--end", default=None)
     sub.add_parser("predictive-assemble")
     sub.add_parser("chainlink-60s-feasibility")
+    sub.add_parser("plane-fixture-input")
+    plane_validate = sub.add_parser("plane-validate")
+    _remote_contract_arguments(plane_validate)
+    plane_validate.add_argument("--chunks-json", required=True)
+    plane_validate.add_argument("--source-commit", default=os.environ.get("GITHUB_SHA", ""))
+    plane_transform = sub.add_parser("plane-transform")
+    _remote_contract_arguments(plane_transform)
+    plane_transform.add_argument("--chunk", type=int, required=True)
+    plane_transform.add_argument("--source-commit", default=os.environ.get("GITHUB_SHA", ""))
+    plane_transform.add_argument("--output", type=Path, required=True)
+    plane_stage = sub.add_parser("plane-stage")
+    plane_stage.add_argument("--directory", type=Path, required=True)
+    plane_assemble = sub.add_parser("plane-assemble")
+    _remote_contract_arguments(plane_assemble)
+    plane_assemble.add_argument("--source-commit", default=os.environ.get("GITHUB_SHA", ""))
+    plane_reconcile = sub.add_parser("plane-reconcile")
+    plane_reconcile.add_argument("--derived-tag", required=True)
+    plane_negative = sub.add_parser("plane-negative-canary")
+    _remote_contract_arguments(plane_negative)
+    plane_negative.add_argument("--source-commit", default=os.environ.get("GITHUB_SHA", ""))
+    plane_negative.add_argument("--directory", type=Path, required=True)
     return result
+
+
+def _remote_contract_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("--input-repository", required=True)
+    command.add_argument("--input-release-id", type=int, required=True)
+    command.add_argument("--contract-asset-id", type=int, required=True)
+    command.add_argument("--contract-sha256", required=True)
+    command.add_argument("--contract-bytes", type=int, required=True)
+
+
+def _remote_contract(args: argparse.Namespace) -> dict[str, Any]:
+    return load_remote_contract_from_args(
+        args.input_repository,
+        args.input_release_id,
+        args.contract_asset_id,
+        args.contract_sha256,
+        args.contract_bytes,
+    )
 
 
 def main() -> None:
@@ -186,6 +247,40 @@ def main() -> None:
         assemble_predictive_authority()
     elif args.command == "chainlink-60s-feasibility":
         publish_semantic_authority()
+    elif args.command == "plane-fixture-input":
+        print(contract_output_lines(publish_fixture_inputs()))
+    elif args.command == "plane-validate":
+        contract = _remote_contract(args)
+        validate_chunk_indexes(contract, args.chunks_json)
+        plan = processing_plan(contract, args.source_commit)
+        print(
+            contract_output_lines(
+                {
+                    "authority_type": contract["authority_type"],
+                    "derived_tag": plan["derived_tag"],
+                    "input_manifest_identity": contract["input_manifest_identity"],
+                    "processing_identity": plan["processing_identity"],
+                }
+            )
+        )
+    elif args.command == "plane-transform":
+        contract = _remote_contract(args)
+        manifest = build_prospective_chunk(contract, args.chunk, args.source_commit, args.output)
+        print(json.dumps(manifest, sort_keys=True, separators=(",", ":")))
+    elif args.command == "plane-stage":
+        print(stage_prospective_chunk(args.directory))
+    elif args.command == "plane-assemble":
+        contract = _remote_contract(args)
+        print(assemble_prospective(contract, args.source_commit))
+    elif args.command == "plane-reconcile":
+        print(json.dumps(reconcile_prospective(args.derived_tag), sort_keys=True))
+    elif args.command == "plane-negative-canary":
+        contract = _remote_contract(args)
+        print(
+            json.dumps(
+                negative_canary(contract, args.source_commit, args.directory), sort_keys=True
+            )
+        )
     else:
         raise AssertionError(args.command)
 

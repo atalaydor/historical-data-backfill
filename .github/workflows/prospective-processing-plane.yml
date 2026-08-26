@@ -1,0 +1,164 @@
+name: Prospective V51/V55 remote processing plane
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_repository:
+        description: owner/repository containing the final sealed Linux authority Release
+        required: true
+        type: string
+      input_release_id:
+        description: Numeric immutable input Release ID
+        required: true
+        type: string
+      contract_asset_id:
+        description: Numeric sealed-input contract asset ID
+        required: true
+        type: string
+      contract_sha256:
+        description: Exact sealed-input contract SHA-256
+        required: true
+        type: string
+      contract_bytes:
+        description: Exact sealed-input contract byte size
+        required: true
+        type: string
+      chunk_indexes_json:
+        description: Exact contiguous sealed partition ordinals, for example [0,1]
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      input_repository: {required: true, type: string}
+      input_release_id: {required: true, type: string}
+      contract_asset_id: {required: true, type: string}
+      contract_sha256: {required: true, type: string}
+      contract_bytes: {required: true, type: string}
+      chunk_indexes_json: {required: true, type: string}
+
+permissions: {}
+
+env:
+  PYTHON_VERSION: '3.12.11'
+  INPUT_REPOSITORY: '${{ inputs.input_repository }}'
+  INPUT_RELEASE_ID: '${{ inputs.input_release_id }}'
+  CONTRACT_ASSET_ID: '${{ inputs.contract_asset_id }}'
+  CONTRACT_SHA256: '${{ inputs.contract_sha256 }}'
+  CONTRACT_BYTES: '${{ inputs.contract_bytes }}'
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: read}
+    outputs:
+      derived_tag: '${{ steps.contract.outputs.derived_tag }}'
+      processing_identity: '${{ steps.contract.outputs.processing_identity }}'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '${{ env.PYTHON_VERSION }}'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir . ruff==0.12.12 mypy==1.17.1
+      - run: python -m unittest discover -s tests -v
+      - run: ruff check .
+      - run: mypy
+      - run: git diff --check
+      - id: contract
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          historical-backfill plane-validate \
+            --input-repository "$INPUT_REPOSITORY" \
+            --input-release-id "$INPUT_RELEASE_ID" \
+            --contract-asset-id "$CONTRACT_ASSET_ID" \
+            --contract-sha256 "$CONTRACT_SHA256" \
+            --contract-bytes "$CONTRACT_BYTES" \
+            --chunks-json '${{ inputs.chunk_indexes_json }}' >> "$GITHUB_OUTPUT"
+
+  transform:
+    needs: validate-input
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {contents: read}
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        chunk: '${{ fromJSON(inputs.chunk_indexes_json) }}'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '${{ env.PYTHON_VERSION }}'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          historical-backfill plane-transform \
+            --input-repository "$INPUT_REPOSITORY" \
+            --input-release-id "$INPUT_RELEASE_ID" \
+            --contract-asset-id "$CONTRACT_ASSET_ID" \
+            --contract-sha256 "$CONTRACT_SHA256" \
+            --contract-bytes "$CONTRACT_BYTES" \
+            --chunk '${{ matrix.chunk }}' --output chunk
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: prospective-chunk-${{ matrix.chunk }}
+          path: chunk
+          if-no-files-found: error
+          retention-days: 1
+
+  stage:
+    needs: transform
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: write}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        chunk: '${{ fromJSON(inputs.chunk_indexes_json) }}'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '${{ env.PYTHON_VERSION }}'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with: {name: 'prospective-chunk-${{ matrix.chunk }}', path: chunk}
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill plane-stage --directory chunk
+
+  assemble:
+    needs: [validate-input, stage]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions: {contents: write}
+    concurrency:
+      group: prospective-plane-assembly-${{ needs.validate-input.outputs.processing_identity }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '${{ env.PYTHON_VERSION }}'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          historical-backfill plane-assemble \
+            --input-repository "$INPUT_REPOSITORY" \
+            --input-release-id "$INPUT_RELEASE_ID" \
+            --contract-asset-id "$CONTRACT_ASSET_ID" \
+            --contract-sha256 "$CONTRACT_SHA256" \
+            --contract-bytes "$CONTRACT_BYTES"
+
+  reconcile:
+    needs: [validate-input, assemble]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: write}
+    concurrency:
+      group: prospective-plane-publication-${{ needs.validate-input.outputs.processing_identity }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '${{ env.PYTHON_VERSION }}'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill plane-reconcile --derived-tag '${{ needs.validate-input.outputs.derived_tag }}'

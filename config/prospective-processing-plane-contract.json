@@ -1,0 +1,25 @@
+{
+  "authority_boundary": {
+    "linux_owns": [
+      "causal source and receipt timing",
+      "raw prospective V51/V55 evidence",
+      "market/condition/window/token bindings",
+      "midpoint/outcome authority",
+      "feature research, scoring, maturity, and promotion"
+    ],
+    "remote_plane_owns": [
+      "authenticated deterministic transformation",
+      "content-addressed derived publication",
+      "independent remote reconciliation"
+    ]
+  },
+  "canonical_serialization": "UTF-8 canonical JSON/JSONL; sorted keys; LF; no NaN",
+  "derived_authority_schema": "prospective-derived-authority.v1",
+  "handoff_schema": "prospective-gamma-linux-handoff.v1",
+  "input_schema": "prospective-sealed-input.v1",
+  "processing_identity_schema": "prospective-processing-identity.v1",
+  "transformations": {
+    "v51_polymarket_full_depth": "v51-normalized-depth-primitives.v1",
+    "v55_chainlink_twap60": "v55-normalized-twap60-primitives.v1"
+  }
+}

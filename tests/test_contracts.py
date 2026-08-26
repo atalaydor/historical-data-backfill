@@ -43,6 +43,30 @@ class ContractTests(unittest.TestCase):
         self.assertTrue(raw["integrity_contract"]["require_event_time_at_or_before_feature_cutoff"])
         self.assertFalse(raw["integrity_contract"]["prospective_authority_mutation_allowed"])
 
+    def test_prospective_plane_contract_and_workflows_preserve_authority_boundary(self) -> None:
+        raw = json.loads(
+            (ROOT / "config" / "prospective-processing-plane-contract.json").read_text()
+        )
+        self.assertEqual(raw["input_schema"], "prospective-sealed-input.v1")
+        self.assertEqual(
+            raw["transformations"]["v55_chainlink_twap60"],
+            "v55-normalized-twap60-primitives.v1",
+        )
+        self.assertEqual(
+            raw["transformations"]["v51_polymarket_full_depth"],
+            "v51-normalized-depth-primitives.v1",
+        )
+        workflow = (ROOT / ".github" / "workflows" / "prospective-processing-plane.yml").read_text()
+        canary = (
+            ROOT / ".github" / "workflows" / "prospective-processing-plane-canary.yml"
+        ).read_text()
+        self.assertIn("permissions: {contents: read}", workflow)
+        self.assertIn("permissions: {contents: write}", workflow)
+        self.assertIn("max-parallel: 4", workflow)
+        self.assertIn("plane-negative-canary", canary)
+        self.assertIn("authenticated-rerun-v55", canary)
+        self.assertNotIn("score", workflow.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

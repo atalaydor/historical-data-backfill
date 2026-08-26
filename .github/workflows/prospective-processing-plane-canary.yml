@@ -1,0 +1,120 @@
+name: Prospective processing plane fixture canary
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  seal-fixtures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: write}
+    outputs:
+      input_release_id: '${{ steps.seal.outputs.input_release_id }}'
+      v51_contract_asset_id: '${{ steps.seal.outputs.v51_contract_asset_id }}'
+      v51_contract_sha256: '${{ steps.seal.outputs.v51_contract_sha256 }}'
+      v51_contract_bytes: '${{ steps.seal.outputs.v51_contract_bytes }}'
+      v55_contract_asset_id: '${{ steps.seal.outputs.v55_contract_asset_id }}'
+      v55_contract_sha256: '${{ steps.seal.outputs.v55_contract_sha256 }}'
+      v55_contract_bytes: '${{ steps.seal.outputs.v55_contract_bytes }}'
+    concurrency:
+      group: prospective-plane-canary-fixture-input
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '3.12.11'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - id: seal
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: historical-backfill plane-fixture-input >> "$GITHUB_OUTPUT"
+
+  first-v51:
+    needs: seal-fixtures
+    permissions: {contents: write}
+    uses: ./.github/workflows/prospective-processing-plane.yml
+    with:
+      input_repository: '${{ github.repository }}'
+      input_release_id: '${{ needs.seal-fixtures.outputs.input_release_id }}'
+      contract_asset_id: '${{ needs.seal-fixtures.outputs.v51_contract_asset_id }}'
+      contract_sha256: '${{ needs.seal-fixtures.outputs.v51_contract_sha256 }}'
+      contract_bytes: '${{ needs.seal-fixtures.outputs.v51_contract_bytes }}'
+      chunk_indexes_json: '[0,1]'
+    secrets: inherit
+
+  first-v55:
+    needs: seal-fixtures
+    permissions: {contents: write}
+    uses: ./.github/workflows/prospective-processing-plane.yml
+    with:
+      input_repository: '${{ github.repository }}'
+      input_release_id: '${{ needs.seal-fixtures.outputs.input_release_id }}'
+      contract_asset_id: '${{ needs.seal-fixtures.outputs.v55_contract_asset_id }}'
+      contract_sha256: '${{ needs.seal-fixtures.outputs.v55_contract_sha256 }}'
+      contract_bytes: '${{ needs.seal-fixtures.outputs.v55_contract_bytes }}'
+      chunk_indexes_json: '[0,1]'
+    secrets: inherit
+
+  authenticated-rerun-v51:
+    needs: [seal-fixtures, first-v51]
+    permissions: {contents: write}
+    uses: ./.github/workflows/prospective-processing-plane.yml
+    with:
+      input_repository: '${{ github.repository }}'
+      input_release_id: '${{ needs.seal-fixtures.outputs.input_release_id }}'
+      contract_asset_id: '${{ needs.seal-fixtures.outputs.v51_contract_asset_id }}'
+      contract_sha256: '${{ needs.seal-fixtures.outputs.v51_contract_sha256 }}'
+      contract_bytes: '${{ needs.seal-fixtures.outputs.v51_contract_bytes }}'
+      chunk_indexes_json: '[0,1]'
+    secrets: inherit
+
+  authenticated-rerun-v55:
+    needs: [seal-fixtures, first-v55]
+    permissions: {contents: write}
+    uses: ./.github/workflows/prospective-processing-plane.yml
+    with:
+      input_repository: '${{ github.repository }}'
+      input_release_id: '${{ needs.seal-fixtures.outputs.input_release_id }}'
+      contract_asset_id: '${{ needs.seal-fixtures.outputs.v55_contract_asset_id }}'
+      contract_sha256: '${{ needs.seal-fixtures.outputs.v55_contract_sha256 }}'
+      contract_bytes: '${{ needs.seal-fixtures.outputs.v55_contract_bytes }}'
+      chunk_indexes_json: '[0,1]'
+    secrets: inherit
+
+  fail-closed-negative:
+    needs: [seal-fixtures, first-v55]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: write}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with: {python-version: '3.12.11'}
+      - run: python -m pip install --disable-pip-version-check --no-cache-dir .
+      - env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          historical-backfill plane-transform \
+            --input-repository '${{ github.repository }}' \
+            --input-release-id '${{ needs.seal-fixtures.outputs.input_release_id }}' \
+            --contract-asset-id '${{ needs.seal-fixtures.outputs.v55_contract_asset_id }}' \
+            --contract-sha256 '${{ needs.seal-fixtures.outputs.v55_contract_sha256 }}' \
+            --contract-bytes '${{ needs.seal-fixtures.outputs.v55_contract_bytes }}' \
+            --chunk 0 --output negative-chunk
+          historical-backfill plane-negative-canary \
+            --input-repository '${{ github.repository }}' \
+            --input-release-id '${{ needs.seal-fixtures.outputs.input_release_id }}' \
+            --contract-asset-id '${{ needs.seal-fixtures.outputs.v55_contract_asset_id }}' \
+            --contract-sha256 '${{ needs.seal-fixtures.outputs.v55_contract_sha256 }}' \
+            --contract-bytes '${{ needs.seal-fixtures.outputs.v55_contract_bytes }}' \
+            --directory negative-chunk
+
+  canary-complete:
+    needs:
+      - authenticated-rerun-v51
+      - authenticated-rerun-v55
+      - fail-closed-negative
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: echo 'Fixture-only remote retrieval, transformation, rerun, publication, reconciliation, and negative checks passed.'

@@ -30,14 +30,28 @@ class Asset:
 class GitHubReleases:
     """Authenticated immutable staging with read-after-write reconciliation."""
 
-    def __init__(self) -> None:
-        repository = os.environ.get("GITHUB_REPOSITORY", "")
+    def __init__(self, repository: str | None = None) -> None:
+        repository = repository or os.environ.get("GITHUB_REPOSITORY", "")
         token = os.environ.get("GITHUB_TOKEN", "")
         if not repository or not token:
             raise AuthorityError("GitHub authority environment is unavailable")
         self.repository = repository
         self.token = token
         self.api = f"https://api.github.com/repos/{repository}"
+
+    def release(self, release_id: int) -> dict[str, Any]:
+        raw: dict[str, Any] = self.request("GET", f"{self.api}/releases/{release_id}")
+        if int(raw.get("id", -1)) != release_id:
+            raise AuthorityError("release identity diverged")
+        return raw
+
+    def release_by_tag(self, tag: str) -> dict[str, Any] | None:
+        matches = [item for item in self.releases() if item.get("tag_name") == tag]
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise AuthorityError(f"release tag is ambiguous: {tag}")
+        return matches[0]
 
     def request(self, method: str, url: str, payload: bytes | None = None) -> Any:
         retryable = method in {"GET", "PATCH", "DELETE"}
