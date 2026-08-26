@@ -47,25 +47,43 @@ only these compact values to the production workflow:
   source-authority identity, and self-authenticated input-manifest identity;
 - every partition's ordinal, asset ID/name, byte size, SHA-256, row count, and canonical-JSONL format;
 - exact market, condition, window start/end, decision cutoff, partition, and—when applicable—Up/Down
-  token bindings or BTC/USD TWAP60/opening-report binding;
+  token bindings or canonical-asset/exact Chainlink symbol, feed, source, TWAP60,
+  full-accuracy-scale, opening-report, and reference-report bindings;
 - source/event timestamp field, Linux receipt timestamp and sequence authority, exact cutoff rule,
   partition-global Linux receipt sequence, session identity, explicit gap records,
   no-inference/no-interpolation continuity policy, and Linux exclusions;
 - the permitted owner-specific transformation identity/parameters and expected output schema;
 - exact contiguous chunk matrix matching all sealed partitions.
 
+For every future V55 batch, `v55_source_authority` is self-authenticated and contains exactly one
+canonical asset from `BTC`, `ETH`, `SOL`, `XRP`, `DOGE`, `BNB`, or `HYPE`, plus the exact Linux-
+supplied Chainlink symbol, feed ID, source ID, TWAP60 window, full-accuracy scale, and source-binding
+identity. Every partition, market binding, report, and gap repeats the binding fields required by
+`config/v55-seven-asset-adapter-contract.json`; any substitution or cross-asset contamination fails
+closed. Reports also preserve distinct source and effective timestamps. Gamma sends only the compact
+Release/contract locators through the control plane and never sends bulk evidence through chat or
+Windows.
+
 Any absent, ambiguous, draft/prerelease, mismatched, oversized, non-contiguous, or unauthenticated
 authority fails before transformation. Raw evidence never passes through chat or Windows.
 
 ## V55 adapter
 
-`v55-normalized-twap60-primitives.v1` accepts only supplied BTC/USD 60-second report authority. It
-preserves exact E18/full-accuracy decimal strings, report/source timestamps, Linux receipt time and
-order, session, opening-report identity, market/window/cutoff, and explicit gaps. It emits the exact
-causal report trajectory and opening/latest-causal report bindings needed for Linux to derive
-current-versus-opening distance, movement, bounded trajectory/volatility, and distance-by-time
-states. Missing opening/current reports or a declared intersecting gap cause explicit exclusion.
-It never interpolates, substitutes spot prices, infers timing, or consumes outcomes.
+`v55-normalized-twap60-primitives.v1` accepts one authority-bound canonical asset per sealed batch.
+It preserves the exact Linux-supplied Chainlink symbol/feed/source identity, full-accuracy integer
+and scale, report/source/effective timestamps, Linux receipt time/order, session, opening/reference
+identity, market/window/cutoff, and explicit gaps. It emits the exact causal report trajectory,
+opening/reference/latest-causal bindings, and remaining-time binding needed for Linux to derive
+signed/absolute reference distance, movement since opening, bounded trajectory/volatility, and
+distance-by-time states. Missing or ambiguous source/feed/asset, opening/reference/current reports,
+or a declared intersecting gap causes explicit exclusion or contract rejection. It never
+interpolates, substitutes spot or another asset, pools assets, infers timing, or consumes outcomes.
+
+The additive adapter contract is `v55-seven-asset-adapter-contract.v1`, identity
+`d7e1bc69b755e7e6569538ef43daa904ad2f651d6b9d1b4448e590ada30580c7`. Existing authenticated
+BTC contracts that predate `v55_source_authority` retain the original exact `btc/usd`, TWAP60, E18
+path so their primitive/status/exclusion bytes remain unchanged; that compatibility path cannot be
+used for another asset or symbol.
 
 ## V51 adapter
 

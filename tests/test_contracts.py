@@ -4,6 +4,8 @@ import json
 import unittest
 from pathlib import Path
 
+from historical_backfill.prospective_plane import identity
+
 ROOT = Path(__file__).parents[1]
 
 
@@ -69,6 +71,17 @@ class ContractTests(unittest.TestCase):
         self.assertIn("plane-negative-canary", canary)
         self.assertIn("authenticated-rerun-v55", canary)
         self.assertNotIn("score", workflow.lower())
+
+    def test_v55_seven_asset_adapter_contract_is_self_authenticated(self) -> None:
+        raw = json.loads(
+            (ROOT / "config" / "v55-seven-asset-adapter-contract.json").read_text()
+        )
+        claimed = raw.pop("adapter_identity")
+        self.assertEqual(identity(raw), claimed)
+        self.assertEqual(
+            raw["canonical_assets"], ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"]
+        )
+        self.assertIn("cross-asset substitution or pooling", raw["prohibitions"])
 
 
 if __name__ == "__main__":

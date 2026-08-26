@@ -23,6 +23,7 @@ HANDOFF_SCHEMA = "prospective-gamma-linux-handoff.v1"
 V51 = "v51_polymarket_full_depth"
 V55 = "v55_chainlink_twap60"
 AUTHORITY_TYPES = (V51, V55)
+SUPPORTED_V55_ASSETS = ("BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE")
 TRANSFORMS = {
     V51: "v51-normalized-depth-primitives.v1",
     V55: "v55-normalized-twap60-primitives.v1",
@@ -87,6 +88,41 @@ def _without(value: dict[str, Any], key: str) -> dict[str, Any]:
     return result
 
 
+def _validate_v55_source_authority(contract: dict[str, Any]) -> dict[str, Any] | None:
+    """Validate the additive seven-asset binding without changing legacy BTC contracts."""
+    raw = contract.get("v55_source_authority")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise AuthorityError("V55 source authority is malformed")
+    required = {
+        "canonical_asset",
+        "chainlink_symbol",
+        "chainlink_feed_id",
+        "chainlink_source_id",
+        "twap_window_s",
+        "full_accuracy_scale",
+        "source_binding_identity",
+    }
+    if set(raw) != required:
+        raise AuthorityError("V55 source authority fields are incomplete or ambiguous")
+    asset = _require_text(raw.get("canonical_asset"), "canonical_asset")
+    if asset not in SUPPORTED_V55_ASSETS:
+        raise AuthorityError("V55 canonical asset is unsupported")
+    _require_text(raw.get("chainlink_symbol"), "chainlink_symbol")
+    _require_text(raw.get("chainlink_feed_id"), "chainlink_feed_id")
+    _require_text(raw.get("chainlink_source_id"), "chainlink_source_id")
+    if raw.get("twap_window_s") != 60:
+        raise AuthorityError("V55 source authority is not TWAP60")
+    scale = _require_int(raw.get("full_accuracy_scale"), "full_accuracy_scale")
+    if scale > 36:
+        raise AuthorityError("V55 full-accuracy scale exceeds the supported bound")
+    claimed = _require_sha(raw.get("source_binding_identity"), "source_binding_identity")
+    if identity(_without(raw, "source_binding_identity")) != claimed:
+        raise AuthorityError("V55 source binding identity diverged")
+    return raw
+
+
 def validate_input_contract(raw: object) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise AuthorityError("sealed input contract is not an object")
@@ -96,6 +132,9 @@ def validate_input_contract(raw: object) -> dict[str, Any]:
     authority_type = contract.get("authority_type")
     if authority_type not in AUTHORITY_TYPES:
         raise AuthorityError("sealed input authority type is unsupported")
+    if authority_type != V55 and "v55_source_authority" in contract:
+        raise AuthorityError("V55 source authority contaminates a non-V55 contract")
+    v55_source = _validate_v55_source_authority(contract) if authority_type == V55 else None
     _require_text(contract.get("authority_version"), "authority_version")
     _require_sha(contract.get("source_authority_identity"), "source_authority_identity")
     claimed = _require_sha(contract.get("input_manifest_identity"), "input_manifest_identity")
@@ -133,6 +172,12 @@ def validate_input_contract(raw: object) -> dict[str, Any]:
         _require_int(partition.get("row_count"), "partition row count", minimum=1)
         if partition.get("format") != "canonical-jsonl":
             raise AuthorityError("partition format is unsupported")
+        if v55_source is not None and (
+            partition.get("canonical_asset") != v55_source["canonical_asset"]
+            or partition.get("source_binding_identity")
+            != v55_source["source_binding_identity"]
+        ):
+            raise AuthorityError("V55 partition asset/source binding diverged")
     if sorted(observed_ordinals) != list(range(len(partitions))):
         raise AuthorityError("partition ordinals are not contiguous")
     bindings = contract.get("market_bindings")
@@ -162,9 +207,24 @@ def validate_input_contract(raw: object) -> dict[str, Any]:
             if len({_require_text(item, "token id") for item in tokens.values()}) != 2:
                 raise AuthorityError("V51 token identities are ambiguous")
         else:
-            if binding.get("symbol") != "btc/usd" or binding.get("window_s") != 60:
-                raise AuthorityError("V55 BTC/USD TWAP60 binding diverged")
+            if v55_source is None:
+                if binding.get("symbol") != "btc/usd" or binding.get("window_s") != 60:
+                    raise AuthorityError("legacy V55 BTC/USD TWAP60 binding diverged")
+            elif (
+                binding.get("canonical_asset") != v55_source["canonical_asset"]
+                or binding.get("symbol") != v55_source["chainlink_symbol"]
+                or binding.get("chainlink_feed_id") != v55_source["chainlink_feed_id"]
+                or binding.get("chainlink_source_id") != v55_source["chainlink_source_id"]
+                or binding.get("source_binding_identity")
+                != v55_source["source_binding_identity"]
+                or binding.get("window_s") != v55_source["twap_window_s"]
+                or binding.get("full_accuracy_scale")
+                != v55_source["full_accuracy_scale"]
+            ):
+                raise AuthorityError("V55 market asset/source binding diverged")
             _require_text(binding.get("opening_report_id"), "opening report id")
+            if v55_source is not None:
+                _require_text(binding.get("reference_report_id"), "reference report id")
     causality = contract.get("causality")
     if not isinstance(causality, dict):
         raise AuthorityError("causality authority is missing")
@@ -218,9 +278,43 @@ def _contract(
     release_id: int,
     release_tag: str,
     partitions: list[dict[str, Any]],
+    v55_asset: str | None = None,
 ) -> dict[str, Any]:
     bindings: list[dict[str, Any]]
+    v55_source: dict[str, Any] | None = None
     if authority_type == V55:
+        v55_binding: dict[str, Any] = {}
+        symbol = "btc/usd"
+        if v55_asset is not None:
+            if v55_asset not in SUPPORTED_V55_ASSETS:
+                raise AuthorityError("fixture V55 canonical asset is unsupported")
+            symbol = f"{v55_asset.lower()}/usd"
+            v55_source = identified(
+                {
+                    "canonical_asset": v55_asset,
+                    "chainlink_symbol": symbol,
+                    "chainlink_feed_id": f"fixture-chainlink-feed:{v55_asset}",
+                    "chainlink_source_id": f"fixture-chainlink-source:{v55_asset}",
+                    "twap_window_s": 60,
+                    "full_accuracy_scale": 18,
+                },
+                "source_binding_identity",
+            )
+            v55_binding = {
+                "canonical_asset": v55_asset,
+                "chainlink_feed_id": v55_source["chainlink_feed_id"],
+                "chainlink_source_id": v55_source["chainlink_source_id"],
+                "source_binding_identity": v55_source["source_binding_identity"],
+                "full_accuracy_scale": 18,
+            }
+            partitions = [
+                {
+                    **partition,
+                    "canonical_asset": v55_asset,
+                    "source_binding_identity": v55_source["source_binding_identity"],
+                }
+                for partition in partitions
+            ]
         bindings = [
             {
                 "market_id": "m-v55-ok",
@@ -229,9 +323,11 @@ def _contract(
                 "window_end_ms": 1_300_000,
                 "decision_cutoff_ms": 1_240_000,
                 "partition_ordinal": 0,
-                "symbol": "btc/usd",
+                "symbol": symbol,
                 "window_s": 60,
                 "opening_report_id": "r-v55-open",
+                **({"reference_report_id": "r-v55-open"} if v55_source else {}),
+                **v55_binding,
             },
             {
                 "market_id": "m-v55-gap",
@@ -240,9 +336,11 @@ def _contract(
                 "window_end_ms": 1_300_000,
                 "decision_cutoff_ms": 1_240_000,
                 "partition_ordinal": 1,
-                "symbol": "btc/usd",
+                "symbol": symbol,
                 "window_s": 60,
                 "opening_report_id": "r-v55-gap-open",
+                **({"reference_report_id": "r-v55-gap-open"} if v55_source else {}),
+                **v55_binding,
             },
             {
                 "market_id": "m-v55-missing",
@@ -251,9 +349,11 @@ def _contract(
                 "window_end_ms": 1_300_000,
                 "decision_cutoff_ms": 1_240_000,
                 "partition_ordinal": 1,
-                "symbol": "btc/usd",
+                "symbol": symbol,
                 "window_s": 60,
                 "opening_report_id": "r-v55-missing-open",
+                **({"reference_report_id": "r-v55-missing-open"} if v55_source else {}),
+                **v55_binding,
             },
         ]
         permitted = [
@@ -345,6 +445,8 @@ def _contract(
             "canonical_serialization": "UTF-8 canonical JSON/JSONL; sorted keys; LF; no NaN",
         },
     }
+    if authority_type == V55 and v55_source is not None:
+        core["v55_source_authority"] = v55_source
     return validate_input_contract(identified(core, "input_manifest_identity"))
 
 
@@ -547,10 +649,23 @@ def _v55_transform(
     contract: dict[str, Any], ordinal: int, rows: list[dict[str, Any]]
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     bindings = _binding_map(contract, ordinal)
+    source = _validate_v55_source_authority(contract)
     _validate_receipt_order(rows, bindings)
     primitives: list[dict[str, Any]] = []
     exclusions: list[dict[str, Any]] = []
     statuses: list[dict[str, Any]] = []
+    authority_fields: dict[str, Any] = (
+        {
+            "canonical_asset": source["canonical_asset"],
+            "symbol": source["chainlink_symbol"],
+            "chainlink_feed_id": source["chainlink_feed_id"],
+            "chainlink_source_id": source["chainlink_source_id"],
+            "source_binding_identity": source["source_binding_identity"],
+            "window_s": source["twap_window_s"],
+        }
+        if source is not None
+        else {}
+    )
     by_market: dict[str, list[dict[str, Any]]] = {market: [] for market in bindings}
     gaps: dict[str, list[dict[str, Any]]] = {market: [] for market in bindings}
     for row in rows:
@@ -558,6 +673,16 @@ def _v55_transform(
         binding = bindings[market_id]
         record_type = row.get("record_type")
         sequence, received = _common_row(row, binding)
+        if source is not None:
+            if (
+                row.get("canonical_asset") != source["canonical_asset"]
+                or row.get("symbol") != source["chainlink_symbol"]
+                or row.get("chainlink_feed_id") != source["chainlink_feed_id"]
+                or row.get("chainlink_source_id") != source["chainlink_source_id"]
+                or row.get("source_binding_identity") != source["source_binding_identity"]
+                or row.get("window_s") != source["twap_window_s"]
+            ):
+                raise AuthorityError("V55 row asset/source binding diverged")
         if record_type == "gap":
             start = _require_int(row.get("gap_start_ms"), "gap_start_ms", minimum=1)
             end = _require_int(row.get("gap_end_ms"), "gap_end_ms", minimum=1)
@@ -573,6 +698,7 @@ def _v55_transform(
                 "gap_start_ms": start,
                 "gap_end_ms": end,
                 "reason": _require_text(row.get("reason"), "gap reason"),
+                **authority_fields,
             }
             if start < binding["decision_cutoff_ms"] and end >= binding["window_start_ms"]:
                 gaps[market_id].append(gap)
@@ -580,8 +706,8 @@ def _v55_transform(
             continue
         if record_type != "report":
             raise AuthorityError("V55 record type is unsupported")
-        if row.get("symbol") != "btc/usd" or row.get("window_s") != 60:
-            raise AuthorityError("V55 report is not BTC/USD TWAP60")
+        if source is None and (row.get("symbol") != "btc/usd" or row.get("window_s") != 60):
+            raise AuthorityError("legacy V55 report is not BTC/USD TWAP60")
         report_id = _require_text(row.get("report_id"), "report_id")
         source_time = _require_int(row.get("source_timestamp_ms"), "source_timestamp_ms", minimum=1)
         full = row.get("full_accuracy_value")
@@ -589,22 +715,32 @@ def _v55_transform(
             raise AuthorityError("V55 full-accuracy value is not an E18 integer string")
         if row.get("role") not in {"opening", "observation"}:
             raise AuthorityError("V55 report role is invalid")
+        effective_time: int | None = None
+        if source is not None:
+            if row.get("full_accuracy_scale") != source["full_accuracy_scale"]:
+                raise AuthorityError("V55 report full-accuracy scale diverged")
+            effective_time = _require_int(
+                row.get("effective_timestamp_ms"), "effective_timestamp_ms", minimum=1
+            )
         primitive = {
             "primitive_type": "twap60_report",
             "market_id": market_id,
             "condition_id": binding["condition_id"],
             "report_id": report_id,
             "role": row["role"],
-            "symbol": "btc/usd",
-            "window_s": 60,
+            "symbol": binding["symbol"],
+            "window_s": binding["window_s"],
             "full_accuracy_value": full,
-            "full_accuracy_scale": 18,
+            "full_accuracy_scale": 18 if source is None else source["full_accuracy_scale"],
             "source_timestamp_ms": source_time,
             "linux_received_at_ms": received,
             "linux_receipt_seq": sequence,
             "session_id": row["session_id"],
             "causal_at_decision_cutoff": received <= binding["decision_cutoff_ms"],
+            **authority_fields,
         }
+        if effective_time is not None:
+            primitive["effective_timestamp_ms"] = effective_time
         primitives.append(primitive)
         by_market[market_id].append(primitive)
     for market_id, binding in sorted(bindings.items()):
@@ -614,9 +750,20 @@ def _v55_transform(
             for item in causal
             if item["report_id"] == binding["opening_report_id"] and item["role"] == "opening"
         ]
+        references = (
+            [
+                item
+                for item in causal
+                if item["report_id"] == binding["reference_report_id"]
+            ]
+            if source is not None
+            else openings
+        )
         reasons: list[str] = []
         if len(openings) != 1:
             reasons.append("missing_or_ambiguous_opening_report")
+        if source is not None and len(references) != 1:
+            reasons.append("missing_or_ambiguous_reference_report")
         if not causal:
             reasons.append("missing_causal_report_at_cutoff")
         if gaps[market_id]:
@@ -629,6 +776,7 @@ def _v55_transform(
                         "condition_id": binding["condition_id"],
                         "reason": reason,
                         "scope": "derived_trajectory_and_anchor_binding",
+                        **authority_fields,
                     }
                 )
             statuses.append(
@@ -637,6 +785,7 @@ def _v55_transform(
                     "condition_id": binding["condition_id"],
                     "eligible": False,
                     "exclusion_reasons": sorted(reasons),
+                    **authority_fields,
                 }
             )
         else:
@@ -650,6 +799,18 @@ def _v55_transform(
                     "latest_causal_report_id": latest["report_id"],
                     "causal_report_count": len(causal),
                     "decision_cutoff_ms": binding["decision_cutoff_ms"],
+                    **(
+                        {
+                            "reference_report_id": references[0]["report_id"],
+                            "window_start_ms": binding["window_start_ms"],
+                            "window_end_ms": binding["window_end_ms"],
+                            "remaining_time_ms": binding["window_end_ms"]
+                            - binding["decision_cutoff_ms"],
+                        }
+                        if source is not None
+                        else {}
+                    ),
+                    **authority_fields,
                 }
             )
     return primitives, statuses, exclusions
@@ -863,6 +1024,11 @@ def build_chunk(
     manifest_core: dict[str, Any] = {
         "schema_version": "prospective-derived-chunk.v1",
         "authority_type": contract["authority_type"],
+        **(
+            {"v55_source_authority": contract["v55_source_authority"]}
+            if "v55_source_authority" in contract
+            else {}
+        ),
         "namespace": contract.get("namespace", "production"),
         "processing_identity": plan["processing_identity"],
         "input_authority_identity": contract["source_authority_identity"],
@@ -1078,6 +1244,11 @@ def assemble(
         manifest_core: dict[str, Any] = {
             "schema_version": OUTPUT_SCHEMA,
             "authority_type": contract["authority_type"],
+            **(
+                {"v55_source_authority": contract["v55_source_authority"]}
+                if "v55_source_authority" in contract
+                else {}
+            ),
             "namespace": contract.get("namespace", "production"),
             "processing_identity": plan["processing_identity"],
             "processing_source_commit": source_commit,
@@ -1156,6 +1327,11 @@ def reconcile(derived_tag: str, output_repository: str | None = None) -> dict[st
             "derived_authority_identity": manifest["derived_authority_identity"],
             "transformation_contract_identity": manifest["transformation_contract_identity"],
             "authority_type": manifest["authority_type"],
+            **(
+                {"v55_source_authority": manifest["v55_source_authority"]}
+                if "v55_source_authority" in manifest
+                else {}
+            ),
             "derived_release": {"release_id": release_id, "tag": derived_tag},
             "market_population": manifest["market_population"],
             "exclusion_rows": manifest["exclusion_rows"],

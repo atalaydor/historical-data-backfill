@@ -18,6 +18,11 @@
   "handoff_schema": "prospective-gamma-linux-handoff.v1",
   "input_schema": "prospective-sealed-input.v1",
   "processing_identity_schema": "prospective-processing-identity.v1",
+  "v55_adapter_contract": {
+    "identity": "d7e1bc69b755e7e6569538ef43daa904ad2f651d6b9d1b4448e590ada30580c7",
+    "path": "config/v55-seven-asset-adapter-contract.json",
+    "supported_canonical_assets": ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "HYPE"]
+  },
   "transformations": {
     "v51_polymarket_full_depth": "v51-normalized-depth-primitives.v1",
     "v55_chainlink_twap60": "v55-normalized-twap60-primitives.v1"

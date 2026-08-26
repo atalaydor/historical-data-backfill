@@ -1,0 +1,104 @@
+{
+  "adapter_identity": "d7e1bc69b755e7e6569538ef43daa904ad2f651d6b9d1b4448e590ada30580c7",
+  "authority_boundary": {
+    "gamma_linux_owns": "sealed source evidence, source/feed identity, causal receipt authority, gaps, exclusions, maturity, outcomes, and science",
+    "xenon_owns": "fail-closed verification and deterministic v55-normalized-twap60-primitives.v1 transformation only"
+  },
+  "canonical_assets": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "XRP",
+    "DOGE",
+    "BNB",
+    "HYPE"
+  ],
+  "future_sealed_input": {
+    "contract": [
+      "remote_repository",
+      "input_release.release_id",
+      "input_release.tag",
+      "contract asset ID, SHA-256, and byte size supplied at dispatch",
+      "authority_type=v55_chainlink_twap60",
+      "authority_version",
+      "source_authority_identity",
+      "input_manifest_identity",
+      "v55_source_authority",
+      "partitions",
+      "market_bindings",
+      "causality",
+      "continuity",
+      "exclusion_authority",
+      "transformation_contract",
+      "expected_output"
+    ],
+    "market_binding_required": [
+      "market_id",
+      "condition_id",
+      "partition_ordinal",
+      "window_start_ms",
+      "window_end_ms",
+      "decision_cutoff_ms",
+      "opening_report_id",
+      "reference_report_id",
+      "canonical_asset",
+      "symbol",
+      "chainlink_feed_id",
+      "chainlink_source_id",
+      "source_binding_identity",
+      "window_s",
+      "full_accuracy_scale"
+    ],
+    "partition_required": [
+      "ordinal",
+      "asset_id",
+      "asset_name",
+      "sha256",
+      "bytes",
+      "row_count",
+      "format=canonical-jsonl",
+      "canonical_asset",
+      "source_binding_identity"
+    ],
+    "report_row_required": [
+      "market_id",
+      "condition_id",
+      "record_type=report",
+      "report_id",
+      "role",
+      "canonical_asset",
+      "symbol",
+      "chainlink_feed_id",
+      "chainlink_source_id",
+      "source_binding_identity",
+      "window_s",
+      "full_accuracy_value",
+      "full_accuracy_scale",
+      "source_timestamp_ms",
+      "effective_timestamp_ms",
+      "linux_received_at_ms",
+      "linux_receipt_seq",
+      "session_id"
+    ],
+    "source_authority_required": [
+      "canonical_asset",
+      "chainlink_symbol",
+      "chainlink_feed_id",
+      "chainlink_source_id",
+      "twap_window_s=60",
+      "full_accuracy_scale",
+      "source_binding_identity"
+    ]
+  },
+  "legacy_btc_compatibility": "Existing self-authenticated BTC contracts without v55_source_authority retain the original exact btc/usd, TWAP60, E18 adapter path and byte semantics; this exception does not authorize new generalized contracts with missing source/feed authority.",
+  "prohibitions": [
+    "interpolation",
+    "spot substitution",
+    "cross-asset substitution or pooling",
+    "inferred receipts or reports",
+    "outcome access",
+    "feature selection or scoring"
+  ],
+  "schema_version": "v55-seven-asset-adapter-contract.v1",
+  "transformation_identity": "v55-normalized-twap60-primitives.v1"
+}
