@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .acquire import acquire_binance_segment, acquire_coinbase
+from .chainlink_semantics import publish_semantic_authority
 from .inventory import ASSETS
 from .model import AuthorityError, write_json
 from .pilot import run_arena_pilot
@@ -150,6 +151,7 @@ def parser() -> argparse.ArgumentParser:
     predictive_coinbase.add_argument("--start", default=None)
     predictive_coinbase.add_argument("--end", default=None)
     sub.add_parser("predictive-assemble")
+    sub.add_parser("chainlink-60s-feasibility")
     return result
 
 
@@ -182,6 +184,8 @@ def main() -> None:
             stage_predictive_coinbase(args.start, args.end)
     elif args.command == "predictive-assemble":
         assemble_predictive_authority()
+    elif args.command == "chainlink-60s-feasibility":
+        publish_semantic_authority()
     else:
         raise AssertionError(args.command)
 
